@@ -190,7 +190,14 @@ top of this README). In dev, `window.__duet` exposes the store for manual testin
 
 ```bash
 npm run build    # typecheck + production build to dist/
+npm test         # vitest — analysis engine, patch/proposal logic, and the full
+                 # WebMCP tool surface against a fake modelContext host
 ```
+
+`src/webmcp/tools.test.tsx` mounts `<Tools />` against a stand-in
+`document.modelContext`, then calls each tool the way an agent would — so the
+schemas, the `execute` bodies, the "proposals don't mutate" rule, and the dynamic
+registration of `get_pending_proposals` are all covered without a real browser.
 
 ## Built with
 
