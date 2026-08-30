@@ -38,14 +38,11 @@ export function RightRail() {
   ];
 
   return (
-    <aside className="flex w-[352px] shrink-0 flex-col gap-2 border-l border-line bg-surface p-2">
+    <aside className="glass flex w-[366px] shrink-0 flex-col gap-2.5 rounded-xl p-2.5">
       <StatStrip />
 
-      <div className="panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl">
-        <div
-          role="tablist"
-          className="flex shrink-0 items-center gap-0.5 border-b border-line px-1.5 py-1.5"
-        >
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-white/[0.028]">
+        <div role="tablist" className="flex shrink-0 items-center gap-1 p-2">
           {tabs.map((t) => (
             <button
               key={t.key}
@@ -53,15 +50,15 @@ export function RightRail() {
               aria-selected={tab === t.key}
               onClick={() => setTab(t.key)}
               className={clsx(
-                'relative flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-medium transition-colors',
+                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-medium transition-colors duration-150',
                 tab === t.key
-                  ? 'bg-float text-fg shadow-[0_1px_0_rgb(255_255_255/0.05)_inset]'
+                  ? 'bg-white/[0.08] text-fg shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]'
                   : 'text-faint hover:text-muted',
               )}
             >
               {t.label}
               {t.badge != null && (
-                <span className="num grid h-[15px] min-w-[15px] place-items-center rounded-full bg-agent px-1 text-[9.5px] font-bold text-[#0f0518]">
+                <span className="num grid h-[17px] min-w-[17px] place-items-center rounded-full bg-agent px-1 text-[10px] font-bold text-[#1a0426]">
                   {t.badge}
                 </span>
               )}

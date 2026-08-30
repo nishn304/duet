@@ -30,7 +30,7 @@ export function Inspector() {
           {selected.map((n) => (
             <span
               key={n.id}
-              className="panel flex items-center gap-1.5 rounded-lg py-1 pl-1 pr-2 text-[11.5px]"
+              className="flex items-center gap-2 rounded-lg bg-white/[0.05] py-1.5 pl-1.5 pr-2.5 text-[12px]"
             >
               <KindChip kind={n.kind} size={16} />
               {n.label}

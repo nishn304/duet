@@ -10,8 +10,8 @@ import { FindingCard } from './FindingsList';
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex min-h-[30px] items-center justify-between gap-3">
-      <span className="text-[12px] text-muted">{label}</span>
+    <label className="flex min-h-[36px] items-center justify-between gap-3">
+      <span className="text-[12.5px] text-muted">{label}</span>
       {children}
     </label>
   );
@@ -26,13 +26,13 @@ function Toggle({ value, onChange }: { value?: boolean; onChange: (v: boolean) =
       aria-checked={on}
       onClick={() => onChange(!on)}
       className={
-        'relative h-[19px] w-[32px] shrink-0 rounded-full transition-colors duration-200 ' +
-        (on ? 'bg-accent' : 'bg-white/12')
+        'relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors duration-200 ' +
+        (on ? 'bg-accent' : 'bg-white/[0.13]')
       }
     >
       <span
-        className="absolute top-[2.5px] h-[14px] w-[14px] rounded-full bg-white shadow transition-[left] duration-200"
-        style={{ left: on ? 15 : 3 }}
+        className="absolute top-[3px] h-4 w-4 rounded-full bg-white shadow-md transition-[left] duration-200 ease-out"
+        style={{ left: on ? 19 : 3 }}
       />
     </button>
   );
@@ -49,7 +49,7 @@ function Select({
 }) {
   return (
     <select
-      className="field h-7 w-[104px] cursor-pointer"
+      className="field h-[30px] w-[112px] cursor-pointer py-0"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
@@ -81,21 +81,21 @@ export function PropertiesPanel({ node }: { node: DuetNode }) {
   );
 
   return (
-    <div className="flex flex-col gap-3 p-3">
+    <div className="flex flex-col gap-3.5 p-3">
       <div className="flex items-center gap-2.5">
-        <KindChip kind={node.kind} size={26} />
+        <KindChip kind={node.kind} size={30} />
         <div className="min-w-0 flex-1">
           <input
-            className="field w-full font-semibold"
+            className="field w-full text-[13.5px] font-semibold tracking-[-0.015em]"
             value={node.label}
             onChange={(e) => update(node.id, { label: e.target.value })}
             aria-label="Component name"
           />
         </div>
       </div>
-      <p className="-mt-1 px-0.5 text-[11px] leading-relaxed text-faint">{meta.blurb}</p>
+      <p className="-mt-0.5 px-0.5 text-[11.5px] leading-[1.6] text-faint">{meta.blurb}</p>
 
-      <div className="panel flex flex-col gap-1 rounded-lg px-3 py-2">
+      <div className="flex flex-col gap-0.5 rounded-xl bg-white/[0.03] px-3.5 py-2.5">
         {(node.kind === 'service' || node.kind === 'worker') && (
           <>
             <Row label="Replicas">
@@ -109,7 +109,7 @@ export function PropertiesPanel({ node }: { node: DuetNode }) {
                 >
                   −
                 </Btn>
-                <span className="num w-7 text-center text-[12.5px] font-semibold">
+                <span className="num w-8 text-center text-[13px] font-semibold">
                   {node.props.replicas ?? 1}
                 </span>
                 <Btn
@@ -202,7 +202,7 @@ export function PropertiesPanel({ node }: { node: DuetNode }) {
         )}
 
         {(node.kind === 'client' || node.kind === 'objectstore') && (
-          <p className="py-1.5 text-[12px] text-faint">No tunable properties.</p>
+          <p className="py-2 text-[12.5px] text-faint">No tunable properties.</p>
         )}
       </div>
 
@@ -215,7 +215,7 @@ export function PropertiesPanel({ node }: { node: DuetNode }) {
       />
 
       {findings.length > 0 && (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           {findings.map((f) => (
             <FindingCard key={f.id} finding={f} />
           ))}

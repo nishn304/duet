@@ -19,26 +19,32 @@ export function ActivityFeed() {
   if (!activity.length) return <Empty>Nothing has happened yet.</Empty>;
 
   return (
-    <ol className="relative flex flex-col gap-0 p-2.5">
+    <ol className="relative flex flex-col p-3">
       {/* the thread the events hang off */}
-      <span className="absolute bottom-3 left-[13px] top-4 w-px bg-line" aria-hidden />
-      {activity.map((a) => (
-        <li key={a.id} className="relative flex items-start gap-2.5 py-[5px] pl-0">
-          <span
-            className="relative z-10 mt-[5px] h-[7px] w-[7px] shrink-0 rounded-full ring-[3px] ring-surface"
-            style={{
-              background: a.actor === 'agent' ? 'var(--color-agent)' : 'var(--color-accent)',
-            }}
-          />
-          <span className="flex-1 text-[11.5px] leading-[1.5] text-muted">
-            <span className={a.actor === 'agent' ? 'font-semibold text-agent' : 'font-semibold text-accent'}>
-              {a.actor === 'agent' ? 'Agent' : 'You'}
-            </span>{' '}
-            {uncap(a.text)}
-          </span>
-          <span className="num shrink-0 pt-px text-[10px] text-faint">{ago(a.ts)}</span>
-        </li>
-      ))}
+      <span className="absolute bottom-5 left-[15px] top-6 w-px bg-line" aria-hidden />
+      {activity.map((a) => {
+        const isAgent = a.actor === 'agent';
+        return (
+          <li key={a.id} className="relative flex items-start gap-3 py-1.5">
+            <span
+              className="relative z-10 mt-[6px] h-2 w-2 shrink-0 rounded-full"
+              style={{
+                background: isAgent ? 'var(--color-agent)' : 'var(--color-accent)',
+                boxShadow: `0 0 0 4px var(--color-panel), 0 0 12px -2px ${
+                  isAgent ? 'var(--color-agent)' : 'var(--color-accent)'
+                }`,
+              }}
+            />
+            <span className="flex-1 text-[12px] leading-[1.6] text-muted">
+              <span className={isAgent ? 'font-semibold text-agent' : 'font-semibold text-accent'}>
+                {isAgent ? 'Agent' : 'You'}
+              </span>{' '}
+              {uncap(a.text)}
+            </span>
+            <span className="num shrink-0 pt-0.5 text-[10.5px] text-faint">{ago(a.ts)}</span>
+          </li>
+        );
+      })}
     </ol>
   );
 }

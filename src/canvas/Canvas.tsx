@@ -23,8 +23,8 @@ const FIT = { padding: 0.16, maxZoom: 1.05 } as const;
 /** Rendered size of a KindNode. Fixed width; height is the tallest common case
  *  (title + kind + a row of property pills). Used to frame the graph from the
  *  model instead of waiting on DOM measurement. */
-const NODE_W = 206;
-const NODE_H = 86;
+const NODE_W = 216;
+const NODE_H = 96;
 
 export function Canvas() {
   const design = useDuet((s) => s.design);
@@ -108,7 +108,7 @@ export function Canvas() {
             strokeDasharray: async ? '5 4' : undefined,
           },
           labelStyle: { fill: 'var(--color-faint)', fontSize: 9.5, fontWeight: 500 },
-          labelBgStyle: { fill: 'var(--color-canvas)' },
+          labelBgStyle: { fill: 'var(--color-ground)' },
           labelBgPadding: [5, 2] as [number, number],
           labelBgBorderRadius: 4,
         };

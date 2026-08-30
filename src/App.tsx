@@ -8,6 +8,10 @@ import { WebMCPHint } from './panels/WebMCPHint';
 import { TopBar } from './TopBar';
 import { Tools } from './webmcp/Tools';
 
+/**
+ * Everything floats on one lit ground: the canvas *is* the background, and the
+ * bar and rails are glass surfaces hovering over it with real gaps between them.
+ */
 export default function App() {
   const undo = useDuet((s) => s.undo);
   const redo = useDuet((s) => s.redo);
@@ -29,19 +33,17 @@ export default function App() {
   return (
     <ReactFlowProvider>
       <Tools />
-      <div className="flex h-full flex-col bg-canvas">
+      <div className="canvas-lit flex h-full flex-col gap-2.5 p-2.5">
         <TopBar />
-        <WebMCPHint />
-        <div className="flex min-h-0 flex-1">
-          <aside className="w-[172px] shrink-0 border-r border-line bg-surface">
-            <Palette />
-          </aside>
-          <main className="canvas-lit relative min-w-0 flex-1">
+        <div className="flex min-h-0 flex-1 gap-2.5">
+          <Palette />
+          <main className="relative min-w-0 flex-1">
             <Canvas />
           </main>
           <RightRail />
         </div>
       </div>
+      <WebMCPHint />
     </ReactFlowProvider>
   );
 }

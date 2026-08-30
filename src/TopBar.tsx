@@ -2,41 +2,46 @@ import { useState } from 'react';
 import { useDuet } from './model/store';
 import type { CloudProvider } from './model/types';
 import { ExportDialog } from './panels/ExportDialog';
-import { Btn, Pill } from './ui/primitives';
+import { Btn } from './ui/primitives';
 import { ExportIcon, RedoIcon, TidyIcon, UndoIcon } from './ui/icons';
 
 const PROVIDERS: CloudProvider[] = ['aws', 'gcp', 'cloudflare', 'generic'];
 
 function Wordmark() {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2.5 pl-1">
       <span
-        className="grid h-[22px] w-[22px] place-items-center rounded-[7px] text-[13px] font-bold"
+        className="grid h-7 w-7 place-items-center rounded-[9px] text-[14px] font-bold"
         style={{
-          background: 'linear-gradient(140deg, var(--color-accent), var(--color-agent))',
-          color: '#05070e',
-          boxShadow: '0 2px 12px -3px var(--color-accent)',
+          background: 'linear-gradient(145deg, var(--color-accent), var(--color-agent))',
+          color: '#fff',
+          boxShadow: '0 3px 16px -4px var(--color-accent), inset 0 1px 0 rgb(255 255 255 / 0.3)',
         }}
       >
         D
       </span>
-      <span className="text-[14px] font-bold tracking-[-0.02em]">Duet</span>
+      <span className="text-[15px] font-semibold tracking-[-0.03em]">Duet</span>
     </div>
   );
 }
 
 function AgentBadge() {
   const present = useDuet((s) => s.agentPresent);
-  return present ? (
-    <Pill tone="agent">
-      <span className="live-dot inline-block h-[6px] w-[6px] rounded-full bg-agent" />
-      Agent connected
-    </Pill>
-  ) : (
-    <Pill tone="neutral">
-      <span className="inline-block h-[6px] w-[6px] rounded-full bg-faint" />
-      No agent
-    </Pill>
+  return (
+    <span
+      className={
+        'inline-flex items-center gap-2 rounded-full py-1.5 pl-2.5 pr-3 text-[12px] font-medium ' +
+        (present ? 'bg-agent/14 text-agent' : 'bg-white/[0.06] text-faint')
+      }
+    >
+      <span
+        className={
+          'h-[6px] w-[6px] rounded-full ' + (present ? 'live-dot bg-agent' : 'bg-faint')
+        }
+        style={present ? { boxShadow: '0 0 10px var(--color-agent)' } : undefined}
+      />
+      {present ? 'Agent connected' : 'No agent'}
+    </span>
   );
 }
 
@@ -53,23 +58,23 @@ export function TopBar() {
   const [exporting, setExporting] = useState(false);
 
   return (
-    <header className="panel flex h-[52px] shrink-0 items-center gap-3 border-x-0 border-t-0 px-3.5">
+    <header className="glass flex h-[54px] shrink-0 items-center gap-3 rounded-xl px-3">
       <Wordmark />
 
-      <div className="h-5 w-px bg-line" />
+      <span className="h-5 w-px bg-line" />
 
       <input
         value={design.name}
         onChange={(e) => rename(e.target.value)}
         aria-label="Design name"
-        className="w-52 rounded-lg border border-transparent bg-transparent px-2 py-1 text-[13.5px] font-semibold tracking-[-0.01em] outline-none transition-colors hover:border-line focus:border-accent/60 focus:bg-canvas"
+        className="w-56 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-[14px] font-medium tracking-[-0.015em] outline-none transition-colors hover:bg-white/[0.05] focus:border-accent/50 focus:bg-white/[0.05]"
       />
 
       <select
         value={design.provider}
         onChange={(e) => setProvider(e.target.value as CloudProvider)}
         aria-label="Cloud provider"
-        className="field h-7 cursor-pointer text-muted"
+        className="field h-[30px] cursor-pointer py-0 text-muted"
       >
         {PROVIDERS.map((p) => (
           <option key={p} value={p}>
@@ -78,29 +83,32 @@ export function TopBar() {
         ))}
       </select>
 
-      <div className="ml-auto flex items-center gap-1.5">
-        <div className="flex items-center gap-0.5 rounded-lg border border-line bg-raised p-0.5">
+      <div className="ml-auto flex items-center gap-2">
+        <div className="flex items-center gap-0.5 rounded-lg bg-white/[0.045] p-1">
           <Btn
             variant="bare"
             size="xs"
+            className="w-[30px] px-0"
             onClick={undo}
             disabled={!canUndo}
             title="Undo (⌘Z)"
             aria-label="Undo"
-            icon={<UndoIcon className="h-3.5 w-3.5" />}
+            icon={<UndoIcon className="h-[15px] w-[15px]" />}
           />
           <Btn
             variant="bare"
             size="xs"
+            className="w-[30px] px-0"
             onClick={redo}
             disabled={!canRedo}
             title="Redo (⌘⇧Z)"
             aria-label="Redo"
-            icon={<RedoIcon className="h-3.5 w-3.5" />}
+            icon={<RedoIcon className="h-[15px] w-[15px]" />}
           />
           <Btn
             variant="bare"
             size="xs"
+            className="w-[30px] px-0"
             onClick={() => {
               tidy();
               window.dispatchEvent(new Event('duet:refit'));
@@ -108,7 +116,7 @@ export function TopBar() {
             disabled={!hasNodes}
             title="Auto-arrange the diagram"
             aria-label="Tidy layout"
-            icon={<TidyIcon className="h-3.5 w-3.5" />}
+            icon={<TidyIcon className="h-[15px] w-[15px]" />}
           />
         </div>
 
@@ -117,14 +125,12 @@ export function TopBar() {
           variant="primary"
           onClick={() => setExporting(true)}
           disabled={!hasNodes}
-          icon={<ExportIcon className="h-3.5 w-3.5" />}
+          icon={<ExportIcon className="h-[15px] w-[15px]" />}
         >
           Export
         </Btn>
 
-        <div className="ml-1">
-          <AgentBadge />
-        </div>
+        <AgentBadge />
       </div>
 
       {exporting && <ExportDialog onClose={() => setExporting(false)} />}

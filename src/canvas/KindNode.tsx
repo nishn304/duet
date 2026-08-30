@@ -17,8 +17,7 @@ const facts = (n: DuetNode): string[] => {
   const p = n.props;
   const out: string[] = [];
   if (p.engine) out.push(p.engine);
-  if ((n.kind === 'service' || n.kind === 'worker') && p.replicas != null)
-    out.push(`${p.replicas}×`);
+  if ((n.kind === 'service' || n.kind === 'worker') && p.replicas != null) out.push(`${p.replicas}×`);
   if (p.instanceSize && p.instanceSize !== 'small') out.push(p.instanceSize);
   if (p.multiAz) out.push('multi-AZ');
   if (p.replica) out.push('replica');
@@ -41,53 +40,54 @@ export function KindNode({ data, selected }: NodeProps) {
   const worst = worstOf(findings);
   const alert = worst ? severityColor(worst) : null;
 
-  // Selection wins over severity for the ring — you should always be able to
-  // see what you've got hold of.
+  // Selection wins over severity for the ring — you should always be able to see
+  // what you have hold of.
   const ring = selected ? 'var(--color-accent)' : alert;
 
   return (
     <div
       className={clsx(
-        'card group relative w-[206px] rounded-xl px-3 py-2.5 transition-transform duration-150',
-        'hover:-translate-y-px',
+        'group relative w-[216px] rounded-[14px] px-3.5 py-3 transition-transform duration-150 ease-out',
+        'hover:-translate-y-[2px]',
         flash && 'agent-touch',
       )}
       style={{
-        borderColor: ring ? `color-mix(in oklab, ${ring} 55%, transparent)` : undefined,
+        background: 'linear-gradient(180deg, #1d1d24, #141419)',
+        border: `1px solid ${ring ? `color-mix(in oklab, ${ring} 50%, transparent)` : 'rgb(255 255 255 / 0.08)'}`,
         boxShadow: ring
-          ? `inset 0 1px 0 rgb(255 255 255 / 0.05), 0 0 0 3px color-mix(in oklab, ${ring} 15%, transparent), 0 12px 28px -12px rgb(0 0 0 / 0.7)`
-          : undefined,
+          ? `inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 4px color-mix(in oklab, ${ring} 12%, transparent), 0 18px 40px -18px rgb(0 0 0 / 0.9)`
+          : 'inset 0 1px 0 rgb(255 255 255 / 0.06), 0 14px 34px -16px rgb(0 0 0 / 0.85)',
       }}
     >
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
 
-      <div className="flex items-start gap-2.5">
-        <KindChip kind={node.kind} size={24} />
+      <div className="flex items-start gap-3">
+        <KindChip kind={node.kind} size={28} />
 
-        <div className="min-w-0 flex-1 pt-px">
-          <div className="truncate text-[13px] font-semibold leading-tight tracking-[-0.005em]">
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[14px] font-semibold leading-[1.2] tracking-[-0.02em]">
             {node.label}
           </div>
           <div
-            className="mt-0.5 text-[9.5px] font-semibold uppercase tracking-[0.09em]"
-            style={{ color: `color-mix(in oklab, ${meta.accent} 62%, var(--color-faint))` }}
+            className="mt-1 text-[9.5px] font-semibold uppercase leading-none tracking-[0.1em]"
+            style={{ color: `color-mix(in oklab, ${meta.accent} 68%, var(--color-faint))` }}
           >
             {meta.label}
           </div>
         </div>
 
         {costUsd > 0 && (
-          <span className="num shrink-0 pt-0.5 text-[10.5px] text-faint">${costUsd}</span>
+          <span className="num shrink-0 pt-0.5 text-[11px] text-faint">${costUsd}</span>
         )}
       </div>
 
       {facts(node).length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
+        <div className="mt-2.5 flex flex-wrap gap-1">
           {facts(node).map((f) => (
             <span
               key={f}
-              className="rounded-md bg-white/5 px-1.5 py-[2px] text-[9.5px] font-medium text-muted"
+              className="rounded-md bg-white/[0.06] px-1.5 py-[3px] text-[10px] font-medium leading-none text-muted"
             >
               {f}
             </span>
@@ -97,11 +97,11 @@ export function KindNode({ data, selected }: NodeProps) {
 
       {worst && (
         <span
-          className="absolute -right-1.5 -top-1.5 grid h-[17px] min-w-[17px] place-items-center rounded-full px-1 text-[10px] font-bold tabular-nums"
+          className="num absolute -right-1.5 -top-1.5 grid h-[19px] min-w-[19px] place-items-center rounded-full px-1 text-[10.5px] font-bold"
           style={{
             background: severityColor(worst),
             color: '#0a0a0a',
-            boxShadow: `0 0 0 3px var(--color-canvas), 0 0 12px -2px ${severityColor(worst)}`,
+            boxShadow: `0 0 0 3.5px var(--color-ground), 0 0 16px -2px ${severityColor(worst)}`,
           }}
           title={findings.map((f) => f.title).join(' · ')}
         >

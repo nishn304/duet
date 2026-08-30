@@ -4,33 +4,29 @@ import { useDuet } from '../model/store';
 import { Empty, SeverityDot, severityColor } from '../ui/primitives';
 import { CheckIcon } from '../ui/icons';
 
-export function FindingCard({
-  finding,
-  onClick,
-}: {
-  finding: Finding;
-  onClick?: () => void;
-}) {
+export function FindingCard({ finding, onClick }: { finding: Finding; onClick?: () => void }) {
   const Tag = onClick ? 'button' : 'div';
   const color = severityColor(finding.severity);
   return (
     <Tag
       onClick={onClick}
       className={
-        'card relative w-full overflow-hidden rounded-lg py-2 pl-3 pr-2.5 text-left transition-colors ' +
-        (onClick ? 'hover:border-line-strong' : '')
+        'card relative w-full overflow-hidden rounded-xl py-2.5 pl-4 pr-3 text-left transition-colors duration-150 ' +
+        (onClick ? 'hover:bg-white/[0.04]' : '')
       }
     >
-      {/* severity reads at a glance from the spine, before any text is parsed */}
-      <span className="absolute inset-y-0 left-0 w-[2.5px]" style={{ background: color }} />
-      <div className="flex items-start gap-2">
-        <span className="mt-[5px]">
+      {/* severity reads from the spine before any text is parsed */}
+      <span className="absolute inset-y-0 left-0 w-[3px]" style={{ background: color }} />
+      <div className="flex items-start gap-2.5">
+        <span className="mt-[6px]">
           <SeverityDot severity={finding.severity} />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="text-[12.5px] font-semibold leading-snug">{finding.title}</div>
-          <p className="mt-1 text-[11.5px] leading-[1.55] text-muted">{finding.reason}</p>
-          <p className="mt-1.5 text-[11.5px] leading-[1.55]">
+          <div className="text-[13px] font-semibold leading-snug tracking-[-0.01em]">
+            {finding.title}
+          </div>
+          <p className="mt-1.5 text-[12px] leading-[1.6] text-muted">{finding.reason}</p>
+          <p className="mt-2 text-[12px] leading-[1.6]">
             <span className="font-semibold text-ok">Fix</span>{' '}
             <span className="text-muted">{finding.fix}</span>
           </p>
@@ -40,7 +36,7 @@ export function FindingCard({
   );
 }
 
-/** Every finding on the design, newest severity first. */
+/** Every finding on the design. */
 export function FindingsList() {
   const report = useAnalysis();
   const setSelection = useDuet((s) => s.setSelection);
@@ -48,14 +44,14 @@ export function FindingsList() {
 
   if (findings.length === 0) {
     return (
-      <Empty icon={<CheckIcon className="h-6 w-6" />}>
+      <Empty icon={<CheckIcon className="h-5 w-5" />}>
         No findings. Select a component to edit it, or add one from the left.
       </Empty>
     );
   }
 
   return (
-    <div className="flex flex-col gap-1.5 p-2.5">
+    <div className="flex flex-col gap-2 p-3">
       {findings.map((f) => (
         <FindingCard
           key={f.id}

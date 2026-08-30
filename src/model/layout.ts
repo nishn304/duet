@@ -19,8 +19,8 @@ const RANK: Record<NodeKind, number> = {
   objectstore: 6,
 };
 
-const COL_W = 240;
-const ROW_H = 132;
+const COL_W = 272;
+const ROW_H = 148;
 const X0 = 80;
 const Y0 = 80;
 
