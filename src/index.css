@@ -2,22 +2,50 @@
 @import '@xyflow/react/dist/style.css';
 
 /*
-  Duet design tokens. Dark-first: the canvas is a workshop surface, not a document.
-  Light palette lives on :root so nothing is defined only inside a media query.
+  Duet's design system.
+
+  Dark-only and deliberately so: this is a workshop surface, not a document.
+  Depth comes from layered surfaces (canvas → surface → raised → float) plus
+  alpha borders and a hairline top highlight, rather than from heavy strokes.
+  Colour is reserved for meaning — component identity, agent activity, severity.
 */
-:root {
-  --duet-bg: #0b0e14;
-  --duet-panel: #12161f;
-  --duet-panel-2: #171c27;
-  --duet-border: #232a37;
-  --duet-text: #e7ecf3;
-  --duet-text-dim: #9aa6b8;
-  --duet-accent: #6ea8fe;
-  --duet-accent-2: #7ee7c7;
-  --duet-agent: #c8a2ff;
-  --duet-warn: #ffcf6e;
-  --duet-danger: #ff8f8f;
-  --duet-ok: #7ee7c7;
+
+@theme {
+  /* surfaces, darkest to lightest */
+  --color-canvas: #08090d;
+  --color-surface: #0e1016;
+  --color-raised: #14161e;
+  --color-float: #1a1d27;
+
+  /* hairlines */
+  --color-line: rgb(255 255 255 / 0.07);
+  --color-line-strong: rgb(255 255 255 / 0.13);
+
+  /* text */
+  --color-fg: #eceef3;
+  --color-muted: #8b92a4;
+  --color-faint: #5a6070;
+
+  /* semantic accents */
+  --color-accent: #5b8cff;
+  --color-agent: #b57cff;
+  --color-ok: #3ddc97;
+  --color-warn: #ffb454;
+  --color-danger: #ff6b6b;
+
+  /* component identity */
+  --color-k-client: #94a3b8;
+  --color-k-cdn: #22d3ee;
+  --color-k-lb: #60a5fa;
+  --color-k-service: #818cf8;
+  --color-k-worker: #a78bfa;
+  --color-k-queue: #fbbf24;
+  --color-k-store: #34d399;
+  --color-k-cache: #fb923c;
+  --color-k-blob: #2dd4bf;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 html,
@@ -28,100 +56,253 @@ body,
 
 body {
   margin: 0;
-  background: var(--duet-bg);
-  color: var(--duet-text);
-  font-family:
-    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
-    sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-feature-settings: 'cv05' 1, 'ss03' 1;
   font-synthesis-weight: none;
-  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* React Flow surface tuned to the Duet palette */
+::selection {
+  background: color-mix(in oklab, var(--color-accent) 34%, transparent);
+}
+
+/* Focus rings: visible, but only for keyboard users. */
+:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--color-accent) 70%, transparent);
+  outline-offset: 2px;
+}
+
+@layer components {
+  /* A raised surface: hairline border + inner top highlight + layered shadow.
+     This one utility is what makes panels and cards read as physical. */
+  .card {
+    background: linear-gradient(178deg, var(--color-float), var(--color-raised) 62%);
+    border: 1px solid var(--color-line);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.045),
+      0 1px 2px rgb(0 0 0 / 0.4),
+      0 12px 28px -12px rgb(0 0 0 / 0.6);
+  }
+
+  .panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.03);
+  }
+
+  /* Small uppercase section label. */
+  .eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--color-faint);
+  }
+
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  .field {
+    background: var(--color-canvas);
+    border: 1px solid var(--color-line);
+    border-radius: 8px;
+    color: var(--color-fg);
+    font-size: 12.5px;
+    padding: 5px 8px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  .field:hover {
+    border-color: var(--color-line-strong);
+  }
+  .field:focus {
+    border-color: color-mix(in oklab, var(--color-accent) 60%, transparent);
+    outline: none;
+  }
+
+  .check {
+    accent-color: var(--color-accent);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+  }
+}
+
+/* Thin, quiet scrollbars. */
+.scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.12) transparent;
+}
+.scroll::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+.scroll::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.1);
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 0.18);
+  background-clip: content-box;
+}
+
+/* ----------------------------------------------------- React Flow theming */
+
 .react-flow {
-  --xy-background-color: var(--duet-bg);
-  --xy-edge-stroke-default: #3b4560;
-  --xy-edge-stroke-selected-default: var(--duet-accent);
-  --xy-connectionline-stroke-default: var(--duet-accent);
-  --xy-attribution-background-color-default: transparent;
+  /* transparent so the canvas gradient below shows through */
+  --xy-background-color: transparent;
+  --xy-edge-stroke-default: #333b52;
+  --xy-edge-stroke-selected-default: var(--color-accent);
+  --xy-connectionline-stroke-default: var(--color-accent);
+}
+
+/* Two soft lights over the canvas so it reads as a lit surface rather than a
+   flat void — the design sits in the bright middle. */
+.canvas-lit {
+  background:
+    radial-gradient(70% 55% at 46% 38%, rgb(91 140 255 / 0.055), transparent 72%),
+    radial-gradient(55% 50% at 82% 88%, rgb(181 124 255 / 0.045), transparent 70%),
+    var(--color-canvas);
 }
 .react-flow__attribution {
   display: none;
 }
+
 .react-flow__handle {
-  width: 9px;
-  height: 9px;
-  background: var(--duet-panel-2);
-  border: 1.5px solid #47506a;
-}
-.react-flow__handle-connecting {
-  background: var(--duet-accent);
-}
-
-/* Dark-mode controls + minimap (React Flow ships a light theme) */
-.react-flow__controls {
-  box-shadow: 0 4px 16px #0007;
-  border: 1px solid var(--duet-border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.react-flow__controls-button {
-  background: var(--duet-panel-2);
-  border-bottom: 1px solid var(--duet-border);
-  color: var(--duet-text);
-}
-.react-flow__controls-button:hover {
-  background: var(--duet-panel);
-}
-.react-flow__controls-button svg {
-  fill: var(--duet-text-dim);
-}
-.react-flow__minimap {
-  border-radius: 8px;
-}
-.react-flow__edge-text {
-  font-size: 10px;
-}
-.react-flow__edge-textbg {
-  fill: var(--duet-panel);
-}
-
-/* Thin, quiet scrollbars inside panels */
-.duet-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: #2b3446 transparent;
-}
-.duet-scroll::-webkit-scrollbar {
   width: 8px;
   height: 8px;
+  border-radius: 99px;
+  background: var(--color-float);
+  border: 1.5px solid rgb(255 255 255 / 0.22);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
 }
-.duet-scroll::-webkit-scrollbar-thumb {
-  background: #2b3446;
-  border-radius: 999px;
+.react-flow__node:hover .react-flow__handle {
+  border-color: rgb(255 255 255 / 0.42);
+}
+.react-flow__handle:hover,
+.react-flow__handle-connecting {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  transform: scale(1.35);
 }
 
-@keyframes duet-pulse {
+.react-flow__edge-path {
+  stroke-width: 1.5;
+}
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke-width: 2;
+}
+.react-flow__edge-text {
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  font-weight: 500;
+  fill: var(--color-faint);
+}
+.react-flow__edge-textbg {
+  fill: var(--color-canvas);
+}
+
+.react-flow__controls {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  box-shadow: 0 8px 24px -8px rgb(0 0 0 / 0.7);
+  backdrop-filter: blur(12px);
+}
+.react-flow__controls-button {
+  width: 28px;
+  height: 28px;
+  background: color-mix(in oklab, var(--color-raised) 82%, transparent);
+  border-bottom: 1px solid var(--color-line);
+  transition: background 0.15s ease;
+}
+.react-flow__controls-button:hover {
+  background: var(--color-float);
+}
+.react-flow__controls-button svg {
+  fill: var(--color-muted);
+  max-width: 12px;
+  max-height: 12px;
+}
+.react-flow__controls-button:hover svg {
+  fill: var(--color-fg);
+}
+
+/* ------------------------------------------------------------- animation */
+
+@keyframes pulse-dot {
   0%,
   100% {
     opacity: 1;
+    transform: scale(1);
   }
   50% {
-    opacity: 0.35;
+    opacity: 0.4;
+    transform: scale(0.85);
   }
 }
-.duet-live-dot {
-  animation: duet-pulse 1.6s ease-in-out infinite;
+.live-dot {
+  animation: pulse-dot 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-@keyframes duet-flash {
-  from {
-    box-shadow: 0 0 0 0 rgba(200, 162, 255, 0.55);
+/* An agent-authored change landing on the canvas. */
+@keyframes agent-touch {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-agent) 55%, transparent);
   }
-  to {
-    box-shadow: 0 0 0 14px rgba(200, 162, 255, 0);
+  100% {
+    box-shadow: 0 0 0 18px transparent;
   }
 }
-.duet-node-flash {
-  animation: duet-flash 0.9s ease-out 2;
+.agent-touch {
+  animation: agent-touch 1s cubic-bezier(0.16, 1, 0.3, 1) 2;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.scale-in {
+  animation: scale-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

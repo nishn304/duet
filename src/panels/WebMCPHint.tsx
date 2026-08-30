@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useDuet } from '../model/store';
+import { CloseIcon } from '../ui/icons';
 
 const KEY = 'duet.hint.dismissed';
 
@@ -11,6 +12,7 @@ function readDismissed() {
   }
 }
 
+/** Tells a visitor with no WebMCP host how to get one, without blocking them. */
 export function WebMCPHint() {
   const agentPresent = useDuet((s) => s.agentPresent);
   const [dismissed, setDismissed] = useState(readDismissed);
@@ -18,12 +20,12 @@ export function WebMCPHint() {
   if (agentPresent || dismissed) return null;
 
   return (
-    <div className="flex items-center gap-3 border-b border-[var(--duet-border)] bg-[#c8a2ff12] px-3 py-1.5 text-[12px] text-[var(--duet-text-dim)]">
-      <span className="text-[var(--duet-agent)]">No agent host detected.</span>
-      <span>
-        Duet still works solo. To let an agent use it, open this page in ChatGPT’s in-app browser, or
-        Chrome 146+ with{' '}
-        <code className="rounded bg-[var(--duet-panel-2)] px-1 py-0.5 text-[11px]">
+    <div className="flex shrink-0 items-center gap-2.5 border-b border-line bg-agent/[0.06] px-3.5 py-1.5">
+      <span className="text-[11.5px] font-semibold text-agent">Running solo</span>
+      <span className="min-w-0 flex-1 truncate text-[11.5px] text-muted">
+        Duet works on its own — but to let an agent drive it, open this page in ChatGPT&rsquo;s in-app
+        browser, or Chrome&nbsp;146+ with{' '}
+        <code className="num rounded bg-white/8 px-1 py-px text-[10.5px] text-fg">
           chrome://flags/#enable-webmcp-testing
         </code>
         .
@@ -33,13 +35,14 @@ export function WebMCPHint() {
           try {
             localStorage.setItem(KEY, '1');
           } catch {
-            /* ignore */
+            /* private mode — dismiss for this session only */
           }
           setDismissed(true);
         }}
-        className="ml-auto shrink-0 rounded px-1.5 py-0.5 text-[var(--duet-text-dim)] hover:bg-[var(--duet-panel-2)] hover:text-[var(--duet-text)]"
+        aria-label="Dismiss"
+        className="grid h-5 w-5 shrink-0 place-items-center rounded-md text-faint transition-colors hover:bg-white/8 hover:text-fg"
       >
-        Dismiss
+        <CloseIcon className="h-3 w-3" />
       </button>
     </div>
   );

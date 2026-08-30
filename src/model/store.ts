@@ -43,6 +43,8 @@ interface DuetState {
   agentPresent: boolean;
   /** when true, agent proposals apply immediately instead of waiting in the lane */
   autoApply: boolean;
+  /** which starter template is loaded, so the palette can show it as active */
+  templateKey: string;
 
   // --- reads used by tools
   snapshot: () => Design;
@@ -105,6 +107,7 @@ export const useDuet = create<DuetState>((set, get) => {
     touch: null,
     agentPresent: false,
     autoApply: false,
+    templateKey: 'starter-jobs',
 
     snapshot: () => clone(get().design),
 
@@ -197,6 +200,7 @@ export const useDuet = create<DuetState>((set, get) => {
       const def = templateByKey(key);
       set((s) => ({
         design: def.build(),
+        templateKey: def.key,
         past: [...s.past, s.design].slice(-HISTORY_LIMIT),
         future: [],
         selectedIds: [],
@@ -230,13 +234,32 @@ export const useDuet = create<DuetState>((set, get) => {
       const prop = get().proposals.find((p) => p.id === id);
       if (!prop || prop.status !== 'pending') return;
       const applied = applyOps(get().design, prop.ops, opIndexes);
-      const addedNodes = (opIndexes ? prop.ops.filter((_, i) => opIndexes.includes(i)) : prop.ops).some(
-        (o) => o.op === 'add_node',
-      );
+      const chosen = opIndexes ? prop.ops.filter((_, i) => opIndexes.includes(i)) : prop.ops;
+      const addedNodes = chosen.some((o) => o.op === 'add_node');
       // A change set that introduces components re-tidies the diagram so it stays
       // readable; it's a single undo to get the old positions back.
       const design = addedNodes ? layeredLayout(applied.design) : applied.design;
-      const touchedIds = design.nodes.map((n) => n.id);
+
+      // Exactly the components this change set touched — the canvas highlights
+      // these, so it has to be the real set, not every node on the board.
+      const resolve = (ref: string) => applied.created[ref] ?? ref;
+      const touchedIds = [
+        ...new Set(
+          chosen.flatMap((o) => {
+            switch (o.op) {
+              case 'add_node':
+                return [applied.created[o.tempId]].filter(Boolean) as string[];
+              case 'update_node':
+                return [resolve(o.id)];
+              case 'connect':
+              case 'disconnect':
+                return [resolve(o.source), resolve(o.target)];
+              case 'remove_node':
+                return [];
+            }
+          }),
+        ),
+      ].filter((nodeId) => design.nodes.some((n) => n.id === nodeId));
       set((s) => ({
         design,
         past: [...s.past, s.design].slice(-HISTORY_LIMIT),

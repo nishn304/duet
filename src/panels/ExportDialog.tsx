@@ -1,7 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { clsx } from 'clsx';
 import { compile, type IacFormat } from '../model/iac';
 import { useDuet } from '../model/store';
 import { Btn } from '../ui/primitives';
+import { CheckIcon, CloseIcon, CopyIcon } from '../ui/icons';
+
+const TABS: Array<{ key: IacFormat; label: string }> = [
+  { key: 'compose', label: 'docker-compose' },
+  { key: 'terraform', label: 'Terraform' },
+];
 
 export function ExportDialog({ onClose }: { onClose: () => void }) {
   const design = useDuet((s) => s.design);
@@ -9,55 +16,81 @@ export function ExportDialog({ onClose }: { onClose: () => void }) {
   const [copied, setCopied] = useState(false);
   const { filename, body } = useMemo(() => compile(design, format), [design, format]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(body);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setTimeout(() => setCopied(false), 1600);
     } catch {
-      /* clipboard blocked — the text is selectable in the box */
+      /* clipboard blocked — the text is still selectable */
     }
   };
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-6"
+      className="fixed inset-0 z-50 grid place-items-center bg-black/65 p-6 backdrop-blur-sm"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Export configuration"
     >
       <div
-        className="flex h-[72vh] w-full max-w-2xl flex-col rounded-xl border border-[var(--duet-border)] bg-[var(--duet-panel)]"
+        className="scale-in card flex h-[74vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="flex items-center justify-between border-b border-[var(--duet-border)] px-4 py-2.5">
-          <div className="flex items-center gap-1.5">
-            {(['compose', 'terraform'] as IacFormat[]).map((f) => (
-              <Btn
-                key={f}
-                size="sm"
-                variant={format === f ? 'primary' : 'ghost'}
-                onClick={() => setFormat(f)}
+        <header className="flex shrink-0 items-center gap-2 border-b border-line px-3 py-2.5">
+          <div className="flex items-center gap-0.5 rounded-lg border border-line bg-canvas p-0.5">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setFormat(t.key)}
+                className={clsx(
+                  'rounded-md px-2.5 py-1 text-[12px] font-medium transition-colors',
+                  format === t.key
+                    ? 'bg-float text-fg shadow-[0_1px_0_rgb(255_255_255/0.05)_inset]'
+                    : 'text-faint hover:text-muted',
+                )}
               >
-                {f === 'compose' ? 'docker-compose' : 'Terraform'}
-              </Btn>
+                {t.label}
+              </button>
             ))}
           </div>
-          <div className="flex items-center gap-1.5">
-            <Btn size="sm" onClick={copy}>
+
+          <span className="num ml-1 text-[11.5px] text-faint">{filename}</span>
+
+          <div className="ml-auto flex items-center gap-1.5">
+            <Btn
+              size="sm"
+              onClick={copy}
+              icon={
+                copied ? <CheckIcon className="h-3.5 w-3.5" /> : <CopyIcon className="h-3.5 w-3.5" />
+              }
+            >
               {copied ? 'Copied' : 'Copy'}
             </Btn>
-            <Btn size="sm" onClick={onClose}>
-              Close
-            </Btn>
+            <Btn
+              variant="bare"
+              size="sm"
+              onClick={onClose}
+              aria-label="Close"
+              icon={<CloseIcon className="h-3.5 w-3.5" />}
+            />
           </div>
         </header>
-        <div className="px-4 pt-2 text-[11px] text-[var(--duet-text-dim)]">
-          {filename} — structural starting point, not apply-ready.
+
+        <div className="border-b border-line bg-warn/[0.06] px-4 py-1.5 text-[11px] text-warn/90">
+          A structural starting point generated from the canvas — not apply-ready.
         </div>
-        <textarea
-          readOnly
-          value={body}
-          className="duet-scroll m-4 mt-2 min-h-0 flex-1 resize-none rounded-lg border border-[var(--duet-border)] bg-[var(--duet-bg)] p-3 font-mono text-[12px] leading-relaxed text-[var(--duet-text)] outline-none"
-        />
+
+        <pre className="scroll min-h-0 flex-1 overflow-auto bg-canvas px-4 py-3 font-mono text-[12px] leading-[1.65] text-fg selection:bg-accent/30">
+          {body}
+        </pre>
       </div>
     </div>
   );

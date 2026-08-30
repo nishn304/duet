@@ -1,57 +1,59 @@
-import { CATALOG } from '../model/catalog';
+import { kindMeta } from '../model/catalog';
 import { NODE_KINDS } from '../model/types';
 import { useDuet } from '../model/store';
 import { TEMPLATES } from '../model/templates';
+import { KindChip } from '../ui/primitives';
 
 export function Palette() {
   const addNode = useDuet((s) => s.addNode);
   const loadTemplate = useDuet((s) => s.loadTemplate);
+  const templateKey = useDuet((s) => s.templateKey);
 
   return (
-    <div className="duet-scroll flex h-full flex-col gap-4 overflow-auto p-2">
-      <div>
-        <h2 className="px-1 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--duet-text-dim)]">
-          Add
-        </h2>
-        <div className="flex flex-col gap-1">
-          {NODE_KINDS.map((k) => {
-            const m = CATALOG[k];
-            return (
-              <button
-                key={k}
-                onClick={() => addNode(k)}
-                title={m.blurb}
-                className="flex items-center gap-2 rounded-md border border-transparent px-1.5 py-1.5 text-left text-[12px] text-[var(--duet-text)] hover:border-[var(--duet-border)] hover:bg-[var(--duet-panel-2)]"
-              >
-                <span
-                  className="grid h-5 w-5 shrink-0 place-items-center rounded text-[11px]"
-                  style={{ background: `${m.accent}22`, color: m.accent }}
-                >
-                  {m.glyph}
-                </span>
-                <span className="truncate">{m.label}</span>
-              </button>
-            );
-          })}
-        </div>
+    <div className="scroll flex h-full flex-col overflow-y-auto pb-4">
+      <div className="px-3.5 pb-1.5 pt-3.5">
+        <span className="eyebrow">Components</span>
       </div>
 
-      <div>
-        <h2 className="px-1 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--duet-text-dim)]">
-          Templates
-        </h2>
-        <div className="flex flex-col gap-1">
-          {TEMPLATES.map((t) => (
+      <div className="flex flex-col gap-px px-2">
+        {NODE_KINDS.map((kind) => (
+          <button
+            key={kind}
+            onClick={() => addNode(kind)}
+            title={kindMeta(kind).blurb}
+            className="group flex items-center gap-2.5 rounded-lg px-1.5 py-[7px] text-left transition-colors hover:bg-white/5"
+          >
+            <KindChip kind={kind} size={20} />
+            <span className="truncate text-[12.5px] font-medium text-muted transition-colors group-hover:text-fg">
+              {kindMeta(kind).label}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <div className="mx-3.5 my-3 h-px bg-line" />
+
+      <div className="px-3.5 pb-1.5">
+        <span className="eyebrow">Start from</span>
+      </div>
+
+      <div className="flex flex-col gap-px px-2">
+        {TEMPLATES.map((t) => {
+          const active = t.key === templateKey;
+          return (
             <button
               key={t.key}
               onClick={() => loadTemplate(t.key)}
               title={t.blurb}
-              className="rounded-md border border-transparent px-1.5 py-1.5 text-left text-[12px] text-[var(--duet-text-dim)] hover:border-[var(--duet-border)] hover:bg-[var(--duet-panel-2)] hover:text-[var(--duet-text)]"
+              className={
+                'rounded-lg px-2.5 py-[7px] text-left text-[12px] font-medium transition-colors ' +
+                (active ? 'bg-accent/12 text-accent' : 'text-faint hover:bg-white/5 hover:text-fg')
+              }
             >
               {t.name}
             </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </div>
   );

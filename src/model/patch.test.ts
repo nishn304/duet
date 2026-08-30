@@ -64,6 +64,17 @@ describe('applyOps', () => {
     expect(design.edges).toHaveLength(0);
   });
 
+  it('reports the real ids it created, so callers can highlight them', () => {
+    const { design, created } = applyOps(base(), [
+      { op: 'add_node', tempId: 'lb', kind: 'loadbalancer', label: 'ALB' },
+      { op: 'add_node', tempId: 'ch', kind: 'cache', label: 'Redis' },
+    ]);
+    expect(Object.keys(created).sort()).toEqual(['ch', 'lb']);
+    for (const id of Object.values(created)) {
+      expect(design.nodes.some((n) => n.id === id)).toBe(true);
+    }
+  });
+
   it('does not mutate the input design', () => {
     const input = base();
     const before = JSON.stringify(input);

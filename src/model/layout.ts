@@ -32,14 +32,21 @@ export function layeredLayout(design: Design): Design {
     columns.get(r)!.push(n.id);
   }
 
+  // Ranks are a fixed vocabulary, so a design that skips kinds (no worker, no
+  // cache) would otherwise leave empty columns — dead space that pushes the far
+  // end of the diagram off screen. Compact the occupied ranks into consecutive
+  // columns, preserving their order.
+  const occupied = [...columns.keys()].sort((a, b) => a - b);
+  const column = new Map(occupied.map((rank, i) => [rank, i]));
+
   const tallest = Math.max(1, ...[...columns.values()].map((c) => c.length));
   const pos = new Map<string, { x: number; y: number }>();
 
-  for (const [rank, ids] of [...columns.entries()].sort((a, b) => a[0] - b[0])) {
-    const colHeight = ids.length;
-    const yStart = Y0 + ((tallest - colHeight) * ROW_H) / 2;
+  for (const rank of occupied) {
+    const ids = columns.get(rank)!;
+    const yStart = Y0 + ((tallest - ids.length) * ROW_H) / 2;
     ids.forEach((id, i) => {
-      pos.set(id, { x: X0 + rank * COL_W, y: yStart + i * ROW_H });
+      pos.set(id, { x: X0 + column.get(rank)! * COL_W, y: yStart + i * ROW_H });
     });
   }
 

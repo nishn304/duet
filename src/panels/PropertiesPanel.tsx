@@ -4,28 +4,61 @@ import { nodeFindings } from '../model/analysis';
 import { useAnalysis } from '../model/useAnalysis';
 import { useDuet } from '../model/store';
 import type { DuetNode, InstanceSize, NodeProps } from '../model/types';
-import { Btn, SeverityDot } from '../ui/primitives';
+import { Btn, KindChip } from '../ui/primitives';
+import { TrashIcon } from '../ui/icons';
+import { FindingCard } from './FindingsList';
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex items-center justify-between gap-3 py-1 text-[12px]">
-      <span className="text-[var(--duet-text-dim)]">{label}</span>
+    <label className="flex min-h-[30px] items-center justify-between gap-3">
+      <span className="text-[12px] text-muted">{label}</span>
       {children}
     </label>
   );
 }
 
-const inputCls =
-  'rounded border border-[var(--duet-border)] bg-[var(--duet-bg)] px-1.5 py-1 text-[12px] text-[var(--duet-text)] outline-none focus:border-[var(--duet-accent)]';
-
-function Check({ value, onChange }: { value?: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ value, onChange }: { value?: boolean; onChange: (v: boolean) => void }) {
+  const on = Boolean(value);
   return (
-    <input
-      type="checkbox"
-      checked={Boolean(value)}
-      onChange={(e) => onChange(e.target.checked)}
-      className="h-4 w-4 accent-[var(--duet-accent)]"
-    />
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+      className={
+        'relative h-[19px] w-[32px] shrink-0 rounded-full transition-colors duration-200 ' +
+        (on ? 'bg-accent' : 'bg-white/12')
+      }
+    >
+      <span
+        className="absolute top-[2.5px] h-[14px] w-[14px] rounded-full bg-white shadow transition-[left] duration-200"
+        style={{ left: on ? 15 : 3 }}
+      />
+    </button>
+  );
+}
+
+function Select({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  return (
+    <select
+      className="field h-7 w-[104px] cursor-pointer"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    >
+      {options.map((o) => (
+        <option key={o} value={o}>
+          {o}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -37,164 +70,166 @@ export function PropertiesPanel({ node }: { node: DuetNode }) {
   const findings = nodeFindings(report, node.id);
   const set = (props: Partial<NodeProps>) => update(node.id, { props });
 
-  const sizeSelect = (
-    <select
-      className={inputCls}
-      value={node.props.instanceSize ?? 'small'}
-      onChange={(e) => set({ instanceSize: e.target.value as InstanceSize })}
-    >
-      <option value="small">small</option>
-      <option value="medium">medium</option>
-      <option value="large">large</option>
-    </select>
+  const sizeRow = (
+    <Row label="Instance size">
+      <Select
+        value={node.props.instanceSize ?? 'small'}
+        onChange={(v) => set({ instanceSize: v as InstanceSize })}
+        options={['small', 'medium', 'large']}
+      />
+    </Row>
   );
 
   return (
     <div className="flex flex-col gap-3 p-3">
-      <div className="flex items-center gap-2">
-        <span
-          className="grid h-6 w-6 place-items-center rounded text-[13px]"
-          style={{ background: `${meta.accent}22`, color: meta.accent }}
-        >
-          {meta.glyph}
-        </span>
-        <span className="text-[11px] uppercase tracking-wider text-[var(--duet-text-dim)]">
-          {meta.label}
-        </span>
+      <div className="flex items-center gap-2.5">
+        <KindChip kind={node.kind} size={26} />
+        <div className="min-w-0 flex-1">
+          <input
+            className="field w-full font-semibold"
+            value={node.label}
+            onChange={(e) => update(node.id, { label: e.target.value })}
+            aria-label="Component name"
+          />
+        </div>
       </div>
+      <p className="-mt-1 px-0.5 text-[11px] leading-relaxed text-faint">{meta.blurb}</p>
 
-      <input
-        className={`${inputCls} w-full`}
-        value={node.label}
-        onChange={(e) => update(node.id, { label: e.target.value })}
-      />
-
-      <div className="rounded-md border border-[var(--duet-border)] bg-[var(--duet-panel-2)] px-2.5 py-1.5">
+      <div className="panel flex flex-col gap-1 rounded-lg px-3 py-2">
         {(node.kind === 'service' || node.kind === 'worker') && (
           <>
-            <Field label="Replicas">
-              <input
-                type="number"
-                min={1}
-                className={`${inputCls} w-16`}
-                value={node.props.replicas ?? 1}
-                onChange={(e) => set({ replicas: Math.max(1, Number(e.target.value) || 1) })}
-              />
-            </Field>
-            <Field label="Instance size">{sizeSelect}</Field>
+            <Row label="Replicas">
+              <div className="flex items-center gap-1">
+                <Btn
+                  size="xs"
+                  variant="ghost"
+                  className="w-6 px-0"
+                  onClick={() => set({ replicas: Math.max(1, (node.props.replicas ?? 1) - 1) })}
+                  aria-label="Fewer replicas"
+                >
+                  −
+                </Btn>
+                <span className="num w-7 text-center text-[12.5px] font-semibold">
+                  {node.props.replicas ?? 1}
+                </span>
+                <Btn
+                  size="xs"
+                  variant="ghost"
+                  className="w-6 px-0"
+                  onClick={() => set({ replicas: (node.props.replicas ?? 1) + 1 })}
+                  aria-label="More replicas"
+                >
+                  +
+                </Btn>
+              </div>
+            </Row>
+            {sizeRow}
           </>
         )}
+
         {node.kind === 'service' && (
-          <Field label="Public ingress">
-            <Check value={node.props.publicIngress} onChange={(v) => set({ publicIngress: v })} />
-          </Field>
+          <Row label="Public ingress">
+            <Toggle value={node.props.publicIngress} onChange={(v) => set({ publicIngress: v })} />
+          </Row>
         )}
+
         {node.kind === 'datastore' && (
           <>
-            <Field label="Engine">
-              <select
-                className={inputCls}
+            <Row label="Engine">
+              <Select
                 value={node.props.engine ?? 'postgres'}
-                onChange={(e) => set({ engine: e.target.value })}
-              >
-                <option>postgres</option>
-                <option>mysql</option>
-                <option>mongodb</option>
-              </select>
-            </Field>
-            <Field label="Instance size">{sizeSelect}</Field>
-            <Field label="Multi-AZ">
-              <Check value={node.props.multiAz} onChange={(v) => set({ multiAz: v })} />
-            </Field>
-            <Field label="Read replica">
-              <Check value={node.props.replica} onChange={(v) => set({ replica: v })} />
-            </Field>
+                onChange={(v) => set({ engine: v })}
+                options={['postgres', 'mysql', 'mongodb']}
+              />
+            </Row>
+            {sizeRow}
+            <Row label="Multi-AZ">
+              <Toggle value={node.props.multiAz} onChange={(v) => set({ multiAz: v })} />
+            </Row>
+            <Row label="Read replica">
+              <Toggle value={node.props.replica} onChange={(v) => set({ replica: v })} />
+            </Row>
           </>
         )}
+
         {node.kind === 'cache' && (
           <>
-            <Field label="Engine">
-              <select
-                className={inputCls}
+            <Row label="Engine">
+              <Select
                 value={node.props.engine ?? 'redis'}
-                onChange={(e) => set({ engine: e.target.value })}
-              >
-                <option>redis</option>
-                <option>memcached</option>
-              </select>
-            </Field>
-            <Field label="Instance size">{sizeSelect}</Field>
-            <Field label="Multi-AZ">
-              <Check value={node.props.multiAz} onChange={(v) => set({ multiAz: v })} />
-            </Field>
+                onChange={(v) => set({ engine: v })}
+                options={['redis', 'memcached']}
+              />
+            </Row>
+            {sizeRow}
+            <Row label="Multi-AZ">
+              <Toggle value={node.props.multiAz} onChange={(v) => set({ multiAz: v })} />
+            </Row>
           </>
         )}
+
         {node.kind === 'queue' && (
-          <Field label="Engine">
-            <select
-              className={inputCls}
+          <Row label="Engine">
+            <Select
               value={node.props.engine ?? 'sqs'}
-              onChange={(e) => set({ engine: e.target.value })}
-            >
-              <option>sqs</option>
-              <option>kafka</option>
-              <option>rabbitmq</option>
-            </select>
-          </Field>
+              onChange={(v) => set({ engine: v })}
+              options={['sqs', 'kafka', 'rabbitmq']}
+            />
+          </Row>
         )}
+
         {node.kind === 'loadbalancer' && (
           <>
-            <Field label="Public ingress">
-              <Check value={node.props.publicIngress} onChange={(v) => set({ publicIngress: v })} />
-            </Field>
-            <Field label="Multi-AZ">
-              <Check value={node.props.multiAz} onChange={(v) => set({ multiAz: v })} />
-            </Field>
+            <Row label="Public ingress">
+              <Toggle value={node.props.publicIngress} onChange={(v) => set({ publicIngress: v })} />
+            </Row>
+            <Row label="Multi-AZ">
+              <Toggle value={node.props.multiAz} onChange={(v) => set({ multiAz: v })} />
+            </Row>
           </>
         )}
+
         {node.kind === 'cdn' && (
-          <Field label="Public ingress">
-            <Check value={node.props.publicIngress} onChange={(v) => set({ publicIngress: v })} />
-          </Field>
+          <Row label="Public ingress">
+            <Toggle value={node.props.publicIngress} onChange={(v) => set({ publicIngress: v })} />
+          </Row>
         )}
+
         {node.kind === 'external' && (
-          <Field label="Managed (has SLA)">
-            <Check value={node.props.managed} onChange={(v) => set({ managed: v })} />
-          </Field>
+          <Row label="Managed (has SLA)">
+            <Toggle value={node.props.managed} onChange={(v) => set({ managed: v })} />
+          </Row>
         )}
+
         {(node.kind === 'client' || node.kind === 'objectstore') && (
-          <p className="py-1 text-[12px] text-[var(--duet-text-dim)]">No tunable properties.</p>
+          <p className="py-1.5 text-[12px] text-faint">No tunable properties.</p>
         )}
       </div>
 
       <textarea
         placeholder="Notes for you and the agent…"
-        className={`${inputCls} w-full resize-none`}
+        className="field w-full resize-none leading-relaxed placeholder:text-faint"
         rows={2}
         value={node.props.notes ?? ''}
         onChange={(e) => set({ notes: e.target.value })}
       />
 
       {findings.length > 0 && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5">
           {findings.map((f) => (
-            <div
-              key={f.id}
-              className="rounded-md border border-[var(--duet-border)] bg-[var(--duet-panel-2)] p-2 text-[12px]"
-            >
-              <div className="flex items-center gap-1.5 font-medium">
-                <SeverityDot severity={f.severity} />
-                {f.title}
-              </div>
-              <p className="mt-1 text-[var(--duet-text-dim)]">{f.reason}</p>
-              <p className="mt-1 text-[var(--duet-accent-2)]">Fix: {f.fix}</p>
-            </div>
+            <FindingCard key={f.id} finding={f} />
           ))}
         </div>
       )}
 
-      <Btn variant="danger" size="sm" className="self-start" onClick={() => removeNodes([node.id])}>
-        Delete component
+      <Btn
+        variant="danger"
+        size="sm"
+        className="self-start"
+        onClick={() => removeNodes([node.id])}
+        icon={<TrashIcon className="h-3.5 w-3.5" />}
+      >
+        Delete
       </Btn>
     </div>
   );

@@ -1,8 +1,9 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { clsx } from 'clsx';
 import { kindMeta } from '../model/catalog';
-import type { Finding } from '../model/analysis';
+import type { Finding, Severity } from '../model/analysis';
 import type { DuetNode } from '../model/types';
+import { KindChip, severityColor } from '../ui/primitives';
 
 export interface KindNodeData extends Record<string, unknown> {
   node: DuetNode;
@@ -11,101 +12,101 @@ export interface KindNodeData extends Record<string, unknown> {
   flash: boolean;
 }
 
-const propSummary = (n: DuetNode): string[] => {
+/** The handful of properties worth showing on the card face. */
+const facts = (n: DuetNode): string[] => {
   const p = n.props;
-  const bits: string[] = [];
-  if (p.engine) bits.push(p.engine);
-  if (p.replicas != null && (n.kind === 'service' || n.kind === 'worker'))
-    bits.push(`×${p.replicas}`);
-  if (p.instanceSize && p.instanceSize !== 'small') bits.push(p.instanceSize);
-  if (p.multiAz) bits.push('multi-AZ');
-  if (p.replica) bits.push('+replica');
-  if (p.publicIngress) bits.push('public');
-  if (n.kind === 'external') bits.push(p.managed ? 'managed' : 'unmanaged');
-  return bits;
+  const out: string[] = [];
+  if (p.engine) out.push(p.engine);
+  if ((n.kind === 'service' || n.kind === 'worker') && p.replicas != null)
+    out.push(`${p.replicas}×`);
+  if (p.instanceSize && p.instanceSize !== 'small') out.push(p.instanceSize);
+  if (p.multiAz) out.push('multi-AZ');
+  if (p.replica) out.push('replica');
+  if (p.publicIngress) out.push('public');
+  if (n.kind === 'external') out.push(p.managed ? 'managed' : 'unmanaged');
+  return out;
 };
 
-export function KindNode({ data, selected }: NodeProps) {
-  const { node, costUsd, findings, flash } = data as KindNodeData;
-  const meta = kindMeta(node.kind);
-  const worst = findings.reduce<'high' | 'medium' | 'low' | null>((acc, f) => {
+const worstOf = (findings: Finding[]): Severity | null =>
+  findings.reduce<Severity | null>((acc, f) => {
     if (f.severity === 'high') return 'high';
     if (f.severity === 'medium' && acc !== 'high') return 'medium';
     if (f.severity === 'low' && !acc) return 'low';
     return acc;
   }, null);
 
-  const ring =
-    worst === 'high'
-      ? 'var(--duet-danger)'
-      : worst === 'medium'
-        ? 'var(--duet-warn)'
-        : selected
-          ? 'var(--duet-accent)'
-          : 'var(--duet-border)';
+export function KindNode({ data, selected }: NodeProps) {
+  const { node, costUsd, findings, flash } = data as KindNodeData;
+  const meta = kindMeta(node.kind);
+  const worst = worstOf(findings);
+  const alert = worst ? severityColor(worst) : null;
+
+  // Selection wins over severity for the ring — you should always be able to
+  // see what you've got hold of.
+  const ring = selected ? 'var(--color-accent)' : alert;
 
   return (
     <div
       className={clsx(
-        'group relative w-[190px] rounded-xl border bg-[var(--duet-panel-2)] px-3 py-2.5 shadow-lg transition-shadow',
-        flash && 'duet-node-flash',
+        'card group relative w-[206px] rounded-xl px-3 py-2.5 transition-transform duration-150',
+        'hover:-translate-y-px',
+        flash && 'agent-touch',
       )}
-      style={{ borderColor: ring, boxShadow: selected ? `0 0 0 2px ${ring}55` : undefined }}
+      style={{
+        borderColor: ring ? `color-mix(in oklab, ${ring} 55%, transparent)` : undefined,
+        boxShadow: ring
+          ? `inset 0 1px 0 rgb(255 255 255 / 0.05), 0 0 0 3px color-mix(in oklab, ${ring} 15%, transparent), 0 12px 28px -12px rgb(0 0 0 / 0.7)`
+          : undefined,
+      }}
     >
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
 
-      <div className="flex items-center gap-2">
-        <span
-          className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-[13px]"
-          style={{ background: `${meta.accent}22`, color: meta.accent }}
-        >
-          {meta.glyph}
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-semibold leading-tight text-[var(--duet-text)]">
+      <div className="flex items-start gap-2.5">
+        <KindChip kind={node.kind} size={24} />
+
+        <div className="min-w-0 flex-1 pt-px">
+          <div className="truncate text-[13px] font-semibold leading-tight tracking-[-0.005em]">
             {node.label}
           </div>
-          <div className="text-[10px] uppercase tracking-wider text-[var(--duet-text-dim)]">
+          <div
+            className="mt-0.5 text-[9.5px] font-semibold uppercase tracking-[0.09em]"
+            style={{ color: `color-mix(in oklab, ${meta.accent} 62%, var(--color-faint))` }}
+          >
             {meta.label}
           </div>
         </div>
+
         {costUsd > 0 && (
-          <span className="shrink-0 text-[10px] tabular-nums text-[var(--duet-text-dim)]">
-            ${costUsd}
-          </span>
+          <span className="num shrink-0 pt-0.5 text-[10.5px] text-faint">${costUsd}</span>
         )}
       </div>
 
-      {propSummary(node).length > 0 && (
-        <div className="mt-1.5 flex flex-wrap gap-1">
-          {propSummary(node).map((b) => (
+      {facts(node).length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {facts(node).map((f) => (
             <span
-              key={b}
-              className="rounded bg-[var(--duet-panel)] px-1.5 py-0.5 text-[10px] text-[var(--duet-text-dim)]"
+              key={f}
+              className="rounded-md bg-white/5 px-1.5 py-[2px] text-[9.5px] font-medium text-muted"
             >
-              {b}
+              {f}
             </span>
           ))}
         </div>
       )}
 
       {worst && (
-        <div
-          className="absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full text-[10px] font-bold"
+        <span
+          className="absolute -right-1.5 -top-1.5 grid h-[17px] min-w-[17px] place-items-center rounded-full px-1 text-[10px] font-bold tabular-nums"
           style={{
-            background:
-              worst === 'high'
-                ? 'var(--duet-danger)'
-                : worst === 'medium'
-                  ? 'var(--duet-warn)'
-                  : 'var(--duet-text-dim)',
-            color: '#1a1206',
+            background: severityColor(worst),
+            color: '#0a0a0a',
+            boxShadow: `0 0 0 3px var(--color-canvas), 0 0 12px -2px ${severityColor(worst)}`,
           }}
           title={findings.map((f) => f.title).join(' · ')}
         >
           {findings.length}
-        </div>
+        </span>
       )}
     </div>
   );

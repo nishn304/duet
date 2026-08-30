@@ -1,83 +1,73 @@
 import { clsx } from 'clsx';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import type { Severity } from '../model/analysis';
+import { KIND_ICON } from './icons';
+import { kindMeta } from '../model/catalog';
+import type { NodeKind } from '../model/types';
 
-export function Panel({
-  title,
-  right,
-  children,
-  className,
-  bodyClassName,
-}: {
-  title?: ReactNode;
-  right?: ReactNode;
-  children: ReactNode;
-  className?: string;
-  bodyClassName?: string;
-}) {
-  return (
-    <section
-      className={clsx(
-        'flex min-h-0 flex-col rounded-lg border border-[var(--duet-border)] bg-[var(--duet-panel)]',
-        className,
-      )}
-    >
-      {title != null && (
-        <header className="flex items-center justify-between gap-2 border-b border-[var(--duet-border)] px-3 py-2">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--duet-text-dim)]">
-            {title}
-          </h2>
-          {right}
-        </header>
-      )}
-      <div className={clsx('duet-scroll min-h-0 flex-1 overflow-auto', bodyClassName)}>{children}</div>
-    </section>
-  );
-}
+/* ------------------------------------------------------------------ button */
 
 type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'primary' | 'ghost' | 'agent' | 'danger';
-  size?: 'sm' | 'md';
+  variant?: 'primary' | 'ghost' | 'agent' | 'danger' | 'bare';
+  size?: 'xs' | 'sm' | 'md';
+  icon?: ReactNode;
 };
 
-export function Btn({ variant = 'ghost', size = 'md', className, ...rest }: BtnProps) {
+export function Btn({ variant = 'ghost', size = 'md', icon, className, children, ...rest }: BtnProps) {
   return (
     <button
       {...rest}
       className={clsx(
-        'inline-flex items-center justify-center gap-1.5 rounded-md border font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40',
-        size === 'sm' ? 'px-2 py-1 text-xs' : 'px-2.5 py-1.5 text-[13px]',
+        'inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg font-medium whitespace-nowrap',
+        'transition-[background-color,border-color,color,box-shadow,transform] duration-150',
+        'active:scale-[0.97] disabled:pointer-events-none disabled:opacity-35',
+        size === 'xs' && 'h-6 px-2 text-[11.5px]',
+        size === 'sm' && 'h-7 px-2.5 text-[12px]',
+        size === 'md' && 'h-8 px-3 text-[12.5px]',
         variant === 'primary' &&
-          'border-transparent bg-[var(--duet-accent)] text-[#08101f] hover:brightness-110',
+          'bg-accent text-[#04070f] shadow-[0_1px_0_rgb(255_255_255/0.25)_inset,0_2px_10px_-2px_var(--color-accent)] hover:brightness-112',
         variant === 'agent' &&
-          'border-transparent bg-[var(--duet-agent)] text-[#160b27] hover:brightness-110',
+          'bg-agent text-[#0f0518] shadow-[0_1px_0_rgb(255_255_255/0.25)_inset,0_2px_10px_-2px_var(--color-agent)] hover:brightness-112',
         variant === 'danger' &&
-          'border-transparent bg-[var(--duet-danger)] text-[#2a0b0b] hover:brightness-110',
+          'border border-danger/25 bg-danger/12 text-danger hover:border-danger/45 hover:bg-danger/20',
         variant === 'ghost' &&
-          'border-[var(--duet-border)] bg-[var(--duet-panel-2)] text-[var(--duet-text)] hover:border-[#39445c]',
+          'border border-line bg-raised text-fg shadow-[0_1px_0_rgb(255_255_255/0.035)_inset] hover:border-line-strong hover:bg-float',
+        variant === 'bare' && 'text-muted hover:bg-float hover:text-fg',
         className,
       )}
-    />
+    >
+      {icon}
+      {children}
+    </button>
   );
 }
+
+/* -------------------------------------------------------------------- pill */
+
+const PILL_TONE = {
+  neutral: 'bg-white/6 text-muted',
+  accent: 'bg-accent/14 text-accent',
+  agent: 'bg-agent/16 text-agent',
+  ok: 'bg-ok/14 text-ok',
+  warn: 'bg-warn/14 text-warn',
+  danger: 'bg-danger/14 text-danger',
+} as const;
 
 export function Pill({
   children,
   tone = 'neutral',
+  className,
 }: {
   children: ReactNode;
-  tone?: 'neutral' | 'accent' | 'agent' | 'ok' | 'warn' | 'danger';
+  tone?: keyof typeof PILL_TONE;
+  className?: string;
 }) {
   return (
     <span
       className={clsx(
-        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium',
-        tone === 'neutral' && 'bg-[var(--duet-panel-2)] text-[var(--duet-text-dim)]',
-        tone === 'accent' && 'bg-[#6ea8fe22] text-[var(--duet-accent)]',
-        tone === 'agent' && 'bg-[#c8a2ff22] text-[var(--duet-agent)]',
-        tone === 'ok' && 'bg-[#7ee7c722] text-[var(--duet-ok)]',
-        tone === 'warn' && 'bg-[#ffcf6e22] text-[var(--duet-warn)]',
-        tone === 'danger' && 'bg-[#ff8f8f22] text-[var(--duet-danger)]',
+        'inline-flex items-center gap-1 rounded-full px-2 py-[3px] text-[10.5px] font-semibold',
+        PILL_TONE[tone],
+        className,
       )}
     >
       {children}
@@ -85,26 +75,67 @@ export function Pill({
   );
 }
 
-export function SeverityDot({ severity }: { severity: Severity }) {
-  const color =
-    severity === 'high'
-      ? 'var(--duet-danger)'
-      : severity === 'medium'
-        ? 'var(--duet-warn)'
-        : 'var(--duet-text-dim)';
+/* -------------------------------------------------------------- kind chip */
+
+/** The rounded, tinted icon square that identifies a component kind. */
+export function KindChip({ kind, size = 22 }: { kind: NodeKind; size?: number }) {
+  const meta = kindMeta(kind);
+  const Icon = KIND_ICON[kind];
   return (
     <span
-      className="inline-block h-2 w-2 shrink-0 rounded-full"
-      style={{ background: color }}
+      className="grid shrink-0 place-items-center rounded-[7px]"
+      style={{
+        width: size,
+        height: size,
+        color: meta.accent,
+        background: `color-mix(in oklab, ${meta.accent} 15%, transparent)`,
+        boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${meta.accent} 22%, transparent)`,
+      }}
+    >
+      <Icon className="h-[58%] w-[58%]" />
+    </span>
+  );
+}
+
+/* ---------------------------------------------------------------- severity */
+
+const SEV_COLOR: Record<Severity, string> = {
+  high: 'var(--color-danger)',
+  medium: 'var(--color-warn)',
+  low: 'var(--color-faint)',
+};
+
+export function SeverityDot({ severity }: { severity: Severity }) {
+  return (
+    <span
+      className="inline-block h-[7px] w-[7px] shrink-0 rounded-full"
+      style={{
+        background: SEV_COLOR[severity],
+        boxShadow: `0 0 8px -1px ${SEV_COLOR[severity]}`,
+      }}
       title={severity}
     />
   );
 }
 
-export function Empty({ children }: { children: ReactNode }) {
+export const severityColor = (s: Severity) => SEV_COLOR[s];
+
+/* ------------------------------------------------------------------ layout */
+
+export function Empty({ icon, children }: { icon?: ReactNode; children: ReactNode }) {
   return (
-    <div className="px-3 py-6 text-center text-[12px] leading-relaxed text-[var(--duet-text-dim)]">
-      {children}
+    <div className="flex flex-col items-center gap-2.5 px-5 py-9 text-center">
+      {icon && <div className="text-faint/60">{icon}</div>}
+      <p className="max-w-[26ch] text-[12px] leading-[1.6] text-faint">{children}</p>
+    </div>
+  );
+}
+
+export function Section({ label, right }: { label: ReactNode; right?: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-2 px-3.5 pb-1.5 pt-3">
+      <span className="eyebrow">{label}</span>
+      {right}
     </div>
   );
 }
