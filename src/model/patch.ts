@@ -132,9 +132,9 @@ export interface ProposalDiff {
   securityAfter: number;
 }
 
-export function describeOp(op: Op, design: Design): string {
+export function describeOp(op: Op, design: Design, aliases: Record<string, string> = {}): string {
   const label = (ref: string) =>
-    design.nodes.find((n) => n.id === ref)?.label ?? ref;
+    design.nodes.find((n) => n.id === ref)?.label ?? aliases[ref] ?? ref;
   switch (op.op) {
     case 'add_node':
       return `Add ${kindMeta(op.kind).label} "${op.label}"${
@@ -165,8 +165,12 @@ export function describeProposal(proposal: Proposal, design: Design): ProposalDi
   const before = analyze(design);
   const { design: after } = applyOps(design, proposal.ops);
   const afterReport = analyze(after);
+  // So "connect cf -> alb" reads as "connect CloudFront -> ALB" before anything
+  // is applied and the tempIds have real nodes.
+  const aliases: Record<string, string> = {};
+  for (const op of proposal.ops) if (op.op === 'add_node') aliases[op.tempId] = op.label;
   return {
-    lines: proposal.ops.map((op, index) => ({ index, text: describeOp(op, design) })),
+    lines: proposal.ops.map((op, index) => ({ index, text: describeOp(op, design, aliases) })),
     costBefore: before.cost.total,
     costAfter: afterReport.cost.total,
     spofBefore: before.spof.length,

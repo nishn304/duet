@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   Background,
   BackgroundVariant,
@@ -69,30 +69,38 @@ export function Canvas() {
     [design.edges, design.nodes],
   );
 
-  // Only persist positions the user actually dragged. React Flow also emits
-  // programmatic `position` / `dimensions` changes while it measures the graph on
-  // mount; forwarding those into the store causes an update loop.
+  // The node list is fully controlled from the store, so React Flow's own change
+  // events have to be translated back into store actions here.
+  //  - `position` while dragging  -> moveNode (ignore the programmatic position /
+  //    dimension changes RF emits while measuring the graph, or we loop)
+  //  - `select`                   -> setSelection (without this, clicking a node
+  //    does nothing, because RF never gets to mutate the array it doesn't own)
+  //  - `remove`                   -> removeNodes
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
+      let nextSel: string[] | null = null;
       for (const c of changes) {
-        if (c.type === 'position' && c.dragging && c.position) moveNode(c.id, c.position);
+        if (c.type === 'position') {
+          if (c.dragging && c.position) moveNode(c.id, c.position);
+        } else if (c.type === 'select') {
+          if (!nextSel) nextSel = [...useDuet.getState().selectedIds];
+          nextSel = c.selected
+            ? nextSel.includes(c.id)
+              ? nextSel
+              : [...nextSel, c.id]
+            : nextSel.filter((id) => id !== c.id);
+        } else if (c.type === 'remove') {
+          removeNodes([c.id]);
+        }
+      }
+      if (nextSel) {
+        const cur = useDuet.getState().selectedIds;
+        if (nextSel.length !== cur.length || nextSel.some((id) => !cur.includes(id))) {
+          setSelection(nextSel);
+        }
       }
     },
-    [moveNode],
-  );
-
-  const selectionSig = useRef('');
-  const onSelectionChange = useCallback(
-    ({ nodes: sel }: { nodes: { id: string }[] }) => {
-      const sig = sel
-        .map((n) => n.id)
-        .sort()
-        .join(',');
-      if (sig === selectionSig.current) return;
-      selectionSig.current = sig;
-      setSelection(sel.map((n) => n.id));
-    },
-    [setSelection],
+    [moveNode, removeNodes, setSelection],
   );
 
   useEffect(() => {
@@ -111,13 +119,18 @@ export function Canvas() {
   }, [design.nodes, setCenter, fitView]);
 
   // Refit the view after the graph is re-laid-out (agent change approved, Tidy).
-  const nodeCount = design.nodes.length;
+  // Two passes: React Flow needs a tick to apply the new positions and measure
+  // the nodes before fitView has anything correct to work with.
   useEffect(() => {
-    if (touch?.by === 'agent') {
-      const t = setTimeout(() => fitView({ padding: 0.3, duration: 450 }), 60);
-      return () => clearTimeout(t);
-    }
-  }, [touch, nodeCount, fitView]);
+    if (touch?.by !== 'agent') return;
+    const fit = () => fitView({ padding: 0.25, duration: 400 });
+    const a = setTimeout(fit, 120);
+    const b = setTimeout(fit, 500);
+    return () => {
+      clearTimeout(a);
+      clearTimeout(b);
+    };
+  }, [touch, fitView]);
 
   return (
     <ReactFlow
@@ -126,8 +139,6 @@ export function Canvas() {
       nodeTypes={nodeTypes}
       onNodesChange={onNodesChange}
       onConnect={(c) => c.source && c.target && connect(c.source, c.target)}
-      onSelectionChange={onSelectionChange}
-      onNodesDelete={(deleted) => removeNodes(deleted.map((n) => n.id))}
       onEdgesDelete={(deleted) => deleted.forEach((e) => disconnect(e.source, e.target))}
       fitView
       fitViewOptions={{ padding: 0.3 }}

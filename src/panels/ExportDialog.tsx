@@ -25,7 +25,7 @@ export function ExportDialog({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-xl border border-[var(--duet-border)] bg-[var(--duet-panel)]"
+        className="flex h-[72vh] w-full max-w-2xl flex-col rounded-xl border border-[var(--duet-border)] bg-[var(--duet-panel)]"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-center justify-between border-b border-[var(--duet-border)] px-4 py-2.5">
