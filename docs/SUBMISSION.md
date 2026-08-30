@@ -27,7 +27,7 @@ object stores, external dependencies, clients. Duet continuously analyses it
 (rough monthly cost, single points of failure, a security lint) and can compile
 it to a starting-point `docker-compose.yml` or Terraform sketch.
 
-Your browser agent gets 12 WebMCP tools over that same model. It reads the
+Your browser agent gets 13 WebMCP tools over that same model. It reads the
 design, runs the analysis, and **proposes** concrete changes — which land in an
 **Approval Lane** as an itemised diff with a cost and reliability delta, for you
 to accept or reject one line at a time.
@@ -44,8 +44,12 @@ typed operations its own UI uses:
   ordered list of typed ops (`add_node`, `connect`, `update_node`,
   `disconnect`, `remove_node`). No selectors, no screenshots, no guessing.
 - **`analyze_design`** hands back the single points of failure and security
-  findings, each with the reason it fired *and the concrete fix that clears it* —
-  so the agent acts on Duet's analysis instead of re-deriving it.
+  findings, each with the reason it fired *and the concrete fix that clears it*.
+- **`simulate_failure`** answers "what breaks if the database dies?". That question
+  only *has* an answer because the page models a typed graph — an agent reading
+  the same diagram as pixels could never compute a blast radius. It reports the
+  damage in words and puts the human's canvas into the same mode, so you are both
+  looking at exactly what goes dark.
 - The tools are only useful **in a shared tab**. `focus_component` recenters
   *your* view on the node the agent is talking about. You drag a box and the agent
   sees it on its next `get_design`. That co-presence is what WebMCP unlocks that a
@@ -77,12 +81,16 @@ typed operations its own UI uses:
   the agent explains the single point of failure you're looking at and proposes
   the specific fix — on the same canvas, not in a chat transcript you then have to
   apply by hand.
+- **"What happens if Postgres goes down?"** The agent runs the simulation; your
+  canvas dims everything healthy and lights up the four components that go dark.
+  Then it proposes the fix, and you approve it. Question to answer to hardened
+  design in one exchange.
 - **Iterate out loud.** "Cheaper." "Now make it multi-region." Each turn is a
   reviewable diff on a live diagram, not a new wall of text.
 
 ## How WebMCP is implemented
 
-All 12 tools are registered in
+All 13 tools are registered in
 [`src/webmcp/Tools.tsx`](../src/webmcp/Tools.tsx) via
 [`use-webmcp-tool`](https://www.npmjs.com/package/use-webmcp-tool) — Chrome's
 official React hook, which wraps `document.modelContext.registerTool` and ties
@@ -98,6 +106,7 @@ each tool's lifecycle to a component (registered on mount, unregistered via
 | `get_selection` | read | What the human has selected, plus findings on it |
 | `export_config` | read | Compile to docker-compose / Terraform sketch |
 | `focus_component` | view | Recenter the shared view on a node (does not change the design) |
+| `simulate_failure` | view | Take a component down; report the blast radius and show it on the shared canvas |
 | `propose_changes` | proposal | Ordered typed ops → Approval Lane; returns the cost/reliability delta |
 | `add_component` / `connect_components` / `update_component` / `remove_component` | proposal | Ergonomic wrappers over `propose_changes` |
 | `get_pending_proposals` | read, **dynamic** | The review queue — only registered while non-empty |
@@ -114,9 +123,9 @@ path". Agent-originated mutations are the one exception: they go through
 
 ## Honest scope
 
-- The analysis is **bounded heuristics**, not a simulator. SPOF detection is graph
-  reachability ("does removing this node cut every client off from storage, and is
-  the node not itself redundant?"). Cost is a coarse static price table. The
+- The analysis is **bounded heuristics**, not a simulator. SPOF detection and the
+  blast radius are both graph reachability; the failure simulation models *total*
+  loss of a component and says so on screen when the component has redundancy. Cost is a coarse static price table. The
   security lint is a handful of structural rules. Every finding shows its
   reasoning on screen.
 - The exported config is a **faithful structural translation** — a starting point

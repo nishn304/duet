@@ -14,6 +14,7 @@ import {
 import { kindMeta } from '../model/catalog';
 import { nodeFindings } from '../model/analysis';
 import { useAnalysis } from '../model/useAnalysis';
+import { useSimulation } from '../model/useSimulation';
 import { useDuet } from '../model/store';
 import { KindNode, type KindNodeData } from './KindNode';
 
@@ -31,6 +32,7 @@ export function Canvas() {
   const selectedIds = useDuet((s) => s.selectedIds);
   const touch = useDuet((s) => s.touch);
   const report = useAnalysis();
+  const blast = useSimulation();
   const { setCenter, fitBounds } = useReactFlow();
   const nodeCount = design.nodes.length;
 
@@ -74,11 +76,12 @@ export function Canvas() {
             costUsd: report.cost.byNode[n.id] ?? 0,
             findings: nodeFindings(report, n.id),
             flash: flashing.has(n.id),
+            impact: blast?.impact[n.id],
           },
         } as Node<KindNodeData>;
       });
     });
-  }, [design.nodes, selectedIds, report, touch]);
+  }, [design.nodes, selectedIds, report, touch, blast]);
 
   // Edges take the colour of the component they lead into, so a glance at the
   // canvas reads as "traffic flowing toward state".
@@ -88,6 +91,11 @@ export function Canvas() {
         const targetKind = design.nodes.find((n) => n.id === e.target)?.kind;
         const accent = targetKind ? kindMeta(targetKind).accent : '#5a6070';
         const async = e.protocol === 'queue' || e.protocol === 'event';
+        // Under simulation, an edge that touches the failed component is a broken
+        // link; everything else recedes with the rest of the unaffected system.
+        const severed =
+          blast != null && (e.source === blast.failedId || e.target === blast.failedId);
+        const dimmed = blast != null && !severed;
         return {
           id: e.id,
           source: e.source,
@@ -103,9 +111,12 @@ export function Canvas() {
             color: `color-mix(in oklab, ${accent} 62%, transparent)`,
           },
           style: {
-            stroke: `color-mix(in oklab, ${accent} 55%, transparent)`,
-            strokeWidth: 1.5,
-            strokeDasharray: async ? '5 4' : undefined,
+            stroke: severed
+              ? 'var(--color-danger)'
+              : `color-mix(in oklab, ${accent} 55%, transparent)`,
+            strokeWidth: severed ? 2 : 1.5,
+            strokeDasharray: severed ? '3 5' : async ? '5 4' : undefined,
+            opacity: dimmed ? 0.18 : 1,
           },
           labelStyle: { fill: 'var(--color-faint)', fontSize: 9.5, fontWeight: 500 },
           labelBgStyle: { fill: 'var(--color-ground)' },
@@ -113,7 +124,7 @@ export function Canvas() {
           labelBgBorderRadius: 4,
         };
       }),
-    [design.edges, design.nodes],
+    [design.edges, design.nodes, blast],
   );
 
   /*

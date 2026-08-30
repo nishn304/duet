@@ -5,7 +5,7 @@ import { useAnalysis } from '../model/useAnalysis';
 import { useDuet } from '../model/store';
 import type { DuetNode, InstanceSize, NodeProps } from '../model/types';
 import { Btn, KindChip } from '../ui/primitives';
-import { TrashIcon } from '../ui/icons';
+import { BoltIcon, TrashIcon } from '../ui/icons';
 import { FindingCard } from './FindingsList';
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
@@ -65,6 +65,8 @@ function Select({
 export function PropertiesPanel({ node }: { node: DuetNode }) {
   const update = useDuet((s) => s.updateNode);
   const removeNodes = useDuet((s) => s.removeNodes);
+  const simulate = useDuet((s) => s.setSimulatedFailure);
+  const simulating = useDuet((s) => s.simulatedFailureId === node.id);
   const report = useAnalysis();
   const meta = kindMeta(node.kind);
   const findings = nodeFindings(report, node.id);
@@ -222,15 +224,23 @@ export function PropertiesPanel({ node }: { node: DuetNode }) {
         </div>
       )}
 
-      <Btn
-        variant="danger"
-        size="sm"
-        className="self-start"
-        onClick={() => removeNodes([node.id])}
-        icon={<TrashIcon className="h-3.5 w-3.5" />}
-      >
-        Delete
-      </Btn>
+      <div className="flex items-center gap-2">
+        <Btn
+          size="sm"
+          onClick={() => simulate(simulating ? null : node.id)}
+          icon={<BoltIcon className="h-4 w-4" />}
+          className={simulating ? 'text-danger' : undefined}
+        >
+          {simulating ? 'Stop simulating' : 'Simulate failure'}
+        </Btn>
+        <Btn
+          variant="danger"
+          size="sm"
+          onClick={() => removeNodes([node.id])}
+          aria-label="Delete component"
+          icon={<TrashIcon className="h-4 w-4" />}
+        />
+      </div>
     </div>
   );
 }

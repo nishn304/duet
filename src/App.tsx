@@ -4,6 +4,7 @@ import { Canvas } from './canvas/Canvas';
 import { Palette } from './canvas/Palette';
 import { useDuet } from './model/store';
 import { RightRail } from './panels/RightRail';
+import { SimulationBar } from './panels/SimulationBar';
 import { WebMCPHint } from './panels/WebMCPHint';
 import { TopBar } from './TopBar';
 import { Tools } from './webmcp/Tools';
@@ -39,6 +40,7 @@ export default function App() {
           <Palette />
           <main className="relative min-w-0 flex-1">
             <Canvas />
+            <SimulationBar />
           </main>
           <RightRail />
         </div>

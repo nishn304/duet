@@ -17,6 +17,7 @@ import { useEffect } from 'react';
 import { useWebMCP } from 'use-webmcp-tool';
 import { CATALOG } from '../model/catalog';
 import { analyze, nodeFindings } from '../model/analysis';
+import { simulateFailure } from '../model/failure';
 import { compile } from '../model/iac';
 import { describeProposal } from '../model/patch';
 import { useDuet } from '../model/store';
@@ -27,6 +28,7 @@ import {
   exportSchema,
   idSchema,
   proposeChangesSchema,
+  simulateFailureSchema,
   updateComponentSchema,
 } from './schemas';
 
@@ -185,6 +187,38 @@ export function Tools() {
       s.logActivity('agent', `Pointed at "${node.label}".`);
       window.dispatchEvent(new CustomEvent('duet:focus', { detail: { id } }));
       return `Focused "${node.label}".`;
+    },
+  });
+
+  useWebMCP<{ id?: string }>({
+    name: 'simulate_failure',
+    description:
+      'Take a component down and report the blast radius: what becomes unreachable, what is degraded, and which storage is cut off. Also puts the human’s canvas into simulation mode so they see the damage highlighted. Omit `id` to clear it. Does not change the design.',
+    inputSchema: simulateFailureSchema,
+    async execute({ id }) {
+      const s = useDuet.getState();
+
+      if (!id) {
+        s.setSimulatedFailure(null);
+        return 'Cleared the failure simulation.';
+      }
+
+      const blast = simulateFailure(s.design, id);
+      if (!blast) throw new Error(`No component with id "${id}"`);
+
+      s.setSimulatedFailure(id);
+      s.logActivity('agent', `Simulated the loss of "${blast.failedLabel}".`);
+
+      const label = (nodeId: string) => s.design.nodes.find((n) => n.id === nodeId)?.label ?? nodeId;
+      return {
+        failed: blast.failedLabel,
+        summary: blast.summary,
+        unreachable: blast.unreachable.map(label),
+        degraded: blast.degraded.map(label),
+        storageCutOff: blast.severedStorage.map(label),
+        hasRedundancy: blast.redundant,
+        note: 'Models total loss of the component. The human can see this highlighted on the canvas.',
+      };
     },
   });
 

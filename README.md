@@ -50,6 +50,9 @@ same typed operations the UI uses:
   enable multi-AZ on the database, drop the public path to the API. You see
   `SPOF 2 → 0`, `$/mo 75 → 431`, tick the four boxes you want, approve. The
   diagram re-lays itself out. Seconds, not a whiteboard session.
+- **"What happens if Postgres goes down?"** → `simulate_failure`; the canvas dims
+  everything still healthy and lights up what goes dark, while the agent reports
+  the blast radius in words. Then it proposes the fix.
 - **"What's the risk in what I've selected?"** → `get_selection` +
   `analyze_design`; the agent explains the single point of failure you're looking
   at and proposes the specific fix.
@@ -58,7 +61,7 @@ same typed operations the UI uses:
 
 ## How WebMCP is implemented
 
-Duet registers **12 tools** via Sarah Drasner's
+Duet registers **13 tools** via Sarah Drasner's
 [`use-webmcp-tool`](https://www.npmjs.com/package/use-webmcp-tool) hook, which
 wraps `document.modelContext.registerTool` and ties each tool's lifecycle to a
 React component (registered on mount, unregistered via `AbortSignal` on unmount).
@@ -73,6 +76,7 @@ schemas are in [`src/webmcp/schemas.ts`](./src/webmcp/schemas.ts).
 | `get_selection` | read | What the human has selected, plus findings on it |
 | `export_config` | read | Compile to `docker-compose.yml` or a Terraform sketch |
 | `focus_component` | view | Recenter the shared view on a node |
+| `simulate_failure` | view | Take a component down and report the blast radius — what goes unreachable, what degrades, which storage is cut off — and put the human's canvas into that mode |
 | `propose_changes` | proposal | Ordered typed ops → Approval Lane, returns the cost/reliability delta |
 | `add_component` / `connect_components` / `update_component` / `remove_component` | proposal | Ergonomic wrappers over `propose_changes` |
 | `get_pending_proposals` | read (dynamic) | The review queue — only registered while non-empty |
@@ -153,15 +157,16 @@ src/
   model/          domain graph, analysis engine, proposal/patch system, IaC compiler
     types.ts        NodeKind, DuetNode, DuetEdge, Op, Proposal
     analysis.ts     cost rollup · SPOF (graph reachability) · security lint
+    failure.ts      blast-radius simulation (what breaks if X is lost)
     patch.ts        applyOps() + describeProposal() (the reviewable diff)
     iac.ts          graph → docker-compose / Terraform sketch
     store.ts        Zustand store — the single source of truth for UI *and* tools
   webmcp/
-    Tools.tsx       all 12 WebMCP tool registrations
+    Tools.tsx       all 13 WebMCP tool registrations
     schemas.ts      JSON Schemas for tool inputs
     compat.ts       bridges navigator.modelContext <-> document.modelContext
   canvas/           React Flow canvas + typed node renderer + palette
-  panels/           Inspector · Approval Lane · Activity feed · Export dialog
+  panels/           Inspector · Approval Lane · Activity feed · Export · Simulation bar
 ```
 
 The UI and the WebMCP tools call the **same** store actions. Agent-originated

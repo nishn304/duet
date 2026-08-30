@@ -155,6 +155,18 @@ export const idSchema = {
   additionalProperties: false,
 } as const;
 
+export const simulateFailureSchema = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      description:
+        'Component to take down. Omit to clear the simulation and return the board to normal.',
+    },
+  },
+  additionalProperties: false,
+} as const;
+
 export const exportSchema = {
   type: 'object',
   properties: {

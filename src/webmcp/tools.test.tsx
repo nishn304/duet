@@ -38,6 +38,7 @@ const reset = () =>
     past: [],
     future: [],
     autoApply: false,
+    simulatedFailureId: null,
   });
 
 beforeEach(reset);
@@ -45,7 +46,7 @@ beforeEach(reset);
 describe('<Tools /> WebMCP registration', () => {
   it('registers the full read + proposal tool set', async () => {
     render(<Tools />);
-    await waitFor(() => expect(host().tools.size).toBeGreaterThanOrEqual(11));
+    await waitFor(() => expect(host().tools.size).toBeGreaterThanOrEqual(12));
 
     const names = [...host().tools.keys()];
     for (const expected of [
@@ -60,6 +61,7 @@ describe('<Tools /> WebMCP registration', () => {
       'connect_components',
       'update_component',
       'remove_component',
+      'simulate_failure',
     ]) {
       expect(names).toContain(expected);
     }
@@ -138,6 +140,34 @@ describe('<Tools /> WebMCP registration', () => {
     await host().call('add_component', { kind: 'cache', label: 'Redis' });
     rerender(<Tools />);
     await waitFor(() => expect(host().tools.has('get_pending_proposals')).toBe(true));
+  });
+
+  it('simulate_failure reports the blast radius and puts the canvas in that mode', async () => {
+    render(<Tools />);
+    await waitFor(() => expect(host().tools.has('simulate_failure')).toBe(true));
+
+    const nodesBefore = useDuet.getState().design.nodes.length;
+    const { ok, value } = await host().call('simulate_failure', { id: 'a' });
+
+    expect(ok).toBe(true);
+    const blast = value as { failed: string; unreachable: string[]; storageCutOff: string[] };
+    expect(blast.failed).toBe('API');
+    expect(blast.unreachable).toContain('DB');
+    expect(blast.storageCutOff).toContain('DB');
+
+    // the human's canvas is now showing it, and the design is untouched
+    expect(useDuet.getState().simulatedFailureId).toBe('a');
+    expect(useDuet.getState().design.nodes.length).toBe(nodesBefore);
+  });
+
+  it('simulate_failure with no id clears the simulation', async () => {
+    render(<Tools />);
+    await waitFor(() => expect(host().tools.has('simulate_failure')).toBe(true));
+    await host().call('simulate_failure', { id: 'a' });
+    expect(useDuet.getState().simulatedFailureId).toBe('a');
+
+    await host().call('simulate_failure', {});
+    expect(useDuet.getState().simulatedFailureId).toBeNull();
   });
 
   it('focus_component selects the node without changing the design', async () => {

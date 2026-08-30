@@ -45,6 +45,8 @@ interface DuetState {
   autoApply: boolean;
   /** which starter template is loaded, so the palette can show it as active */
   templateKey: string;
+  /** component whose failure is currently being simulated, if any */
+  simulatedFailureId: string | null;
 
   // --- reads used by tools
   snapshot: () => Design;
@@ -71,6 +73,7 @@ interface DuetState {
   logActivity: (actor: 'you' | 'agent', text: string) => void;
   setAgentPresent: (v: boolean) => void;
   setAutoApply: (v: boolean) => void;
+  setSimulatedFailure: (id: string | null) => void;
   undo: () => void;
   redo: () => void;
   clearTouch: () => void;
@@ -108,6 +111,7 @@ export const useDuet = create<DuetState>((set, get) => {
     agentPresent: false,
     autoApply: false,
     templateKey: 'starter-jobs',
+    simulatedFailureId: null,
 
     snapshot: () => clone(get().design),
 
@@ -201,6 +205,7 @@ export const useDuet = create<DuetState>((set, get) => {
       set((s) => ({
         design: def.build(),
         templateKey: def.key,
+        simulatedFailureId: null,
         past: [...s.past, s.design].slice(-HISTORY_LIMIT),
         future: [],
         selectedIds: [],
@@ -264,6 +269,8 @@ export const useDuet = create<DuetState>((set, get) => {
         design,
         past: [...s.past, s.design].slice(-HISTORY_LIMIT),
         future: [],
+        // the topology changed, so any standing blast radius is now stale
+        simulatedFailureId: null,
         touch: { ids: touchedIds, ts: Date.now(), by: 'agent' },
         proposals: s.proposals.map((p) =>
           p.id === id
@@ -301,6 +308,8 @@ export const useDuet = create<DuetState>((set, get) => {
     setAgentPresent: (v) => set({ agentPresent: v }),
 
     setAutoApply: (v) => set({ autoApply: v }),
+
+    setSimulatedFailure: (id) => set({ simulatedFailureId: id }),
 
     undo: () =>
       set((s) => {

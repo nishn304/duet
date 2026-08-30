@@ -60,19 +60,35 @@ deltas — `$/mo 75 → 261`, `SPOF 2 → 0`, `sec 1 → 0`.
 > "I dropped one change I didn't want and approved the rest. The diagram
 > reorganises itself."
 
-### 2:00–2:25 — One more turn + export
+### 1:50–2:15 — The blast radius (the money shot)
 
-- To the agent: **"Now make it multi-region."** — show a second proposal arrive.
-- Approve it (or dismiss, to keep it short).
-- Click **Export config** → show the generated `docker-compose.yml`, switch to the
-  **Terraform** tab.
+Ask the agent:
+
+> "What happens if Postgres goes down?"
+
+The canvas flips into simulation mode: everything healthy drains to grey, the
+database goes red with an ✕, everything downstream lights up **CUT OFF**, and the
+bar across the top reads *"Postgres down — 3 cut off, 1 degraded, 1 storage
+unreachable."* The agent says the same thing in words.
+
+> "It's calling `simulate_failure`. That question only has an answer because the
+> page hands the agent a typed graph — an agent reading this diagram as pixels
+> could never compute a blast radius. And notice we're both looking at the same
+> damage: it changed *my* canvas, not just its own answer."
+
+Let it sit for a beat. This is the shot people remember.
+
+### 2:15–2:35 — Export
+
+- Dismiss the simulation, click **Export** → show `docker-compose.yml`, switch to
+  the **Terraform** tab.
 
 > "When it's right, Duet compiles the graph to a starting-point compose file or
 > Terraform sketch."
 
-### 2:25–2:40 — Close
+### 2:35–2:55 — Close
 
-> "Twelve WebMCP tools, all operating on the typed model instead of the DOM.
+> "Thirteen WebMCP tools, all operating on the typed model instead of the DOM.
 > Mutations are proposals, not silent edits. The app ships no LLM — your agent is
 > the intelligence, Duet is the hands. That's the agent-native web: built for
 > people *and* their agents, on one surface."

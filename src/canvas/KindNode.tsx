@@ -2,6 +2,7 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { clsx } from 'clsx';
 import { kindMeta } from '../model/catalog';
 import type { Finding, Severity } from '../model/analysis';
+import type { FailureImpact } from '../model/failure';
 import type { DuetNode } from '../model/types';
 import { KindChip, severityColor } from '../ui/primitives';
 
@@ -10,6 +11,8 @@ export interface KindNodeData extends Record<string, unknown> {
   costUsd: number;
   findings: Finding[];
   flash: boolean;
+  /** set only while a failure simulation is running */
+  impact?: FailureImpact;
 }
 
 /** The handful of properties worth showing on the card face. */
@@ -34,28 +37,58 @@ const worstOf = (findings: Finding[]): Severity | null =>
     return acc;
   }, null);
 
+const IMPACT_LABEL: Record<Exclude<FailureImpact, 'unaffected'>, string> = {
+  failed: 'FAILED',
+  unreachable: 'CUT OFF',
+  degraded: 'DEGRADED',
+};
+
+const IMPACT_COLOR: Record<Exclude<FailureImpact, 'unaffected'>, string> = {
+  failed: 'var(--color-danger)',
+  unreachable: 'var(--color-danger)',
+  degraded: 'var(--color-warn)',
+};
+
 export function KindNode({ data, selected }: NodeProps) {
-  const { node, costUsd, findings, flash } = data as KindNodeData;
+  const { node, costUsd, findings, flash, impact } = data as KindNodeData;
   const meta = kindMeta(node.kind);
   const worst = worstOf(findings);
-  const alert = worst ? severityColor(worst) : null;
 
-  // Selection wins over severity for the ring — you should always be able to see
-  // what you have hold of.
-  const ring = selected ? 'var(--color-accent)' : alert;
+  const simulating = impact != null;
+  const hit = impact && impact !== 'unaffected' ? impact : null;
+
+  // While a simulation runs it owns the node's appearance entirely — findings and
+  // selection step aside so the blast radius reads unambiguously.
+  const ring = hit
+    ? IMPACT_COLOR[hit]
+    : selected
+      ? 'var(--color-accent)'
+      : worst
+        ? severityColor(worst)
+        : null;
 
   return (
     <div
       className={clsx(
-        'group relative w-[216px] rounded-[14px] px-3.5 py-3 transition-transform duration-150 ease-out',
-        'hover:-translate-y-[2px]',
+        'group relative w-[216px] rounded-[14px] px-3.5 py-3 transition-all duration-300 ease-out',
+        !simulating && 'hover:-translate-y-[2px]',
+        // unaffected components recede so the damage is what you see
+        simulating && !hit && 'opacity-30 saturate-0',
+        impact === 'failed' && 'saturate-50',
         flash && 'agent-touch',
       )}
       style={{
-        background: 'linear-gradient(180deg, #1d1d24, #141419)',
-        border: `1px solid ${ring ? `color-mix(in oklab, ${ring} 50%, transparent)` : 'rgb(255 255 255 / 0.08)'}`,
+        background:
+          impact === 'failed'
+            ? 'linear-gradient(180deg, #2a1418, #1a0f12)'
+            : impact === 'unreachable'
+              ? 'linear-gradient(180deg, #241518, #171014)'
+              : impact === 'degraded'
+                ? 'linear-gradient(180deg, #262017, #191510)'
+                : 'linear-gradient(180deg, #1d1d24, #141419)',
+        border: `1px solid ${ring ? `color-mix(in oklab, ${ring} ${hit ? 65 : 50}%, transparent)` : 'rgb(255 255 255 / 0.08)'}`,
         boxShadow: ring
-          ? `inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 4px color-mix(in oklab, ${ring} 12%, transparent), 0 18px 40px -18px rgb(0 0 0 / 0.9)`
+          ? `inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 4px color-mix(in oklab, ${ring} ${hit ? 16 : 12}%, transparent), 0 18px 40px -18px rgb(0 0 0 / 0.9)`
           : 'inset 0 1px 0 rgb(255 255 255 / 0.06), 0 14px 34px -16px rgb(0 0 0 / 0.85)',
       }}
     >
@@ -66,18 +99,27 @@ export function KindNode({ data, selected }: NodeProps) {
         <KindChip kind={node.kind} size={28} />
 
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[14px] font-semibold leading-[1.2] tracking-[-0.02em]">
+          <div
+            className={clsx(
+              'truncate text-[14px] font-semibold leading-[1.2] tracking-[-0.02em]',
+              impact === 'failed' && 'line-through decoration-danger/70 decoration-2',
+            )}
+          >
             {node.label}
           </div>
           <div
             className="mt-1 text-[9.5px] font-semibold uppercase leading-none tracking-[0.1em]"
-            style={{ color: `color-mix(in oklab, ${meta.accent} 68%, var(--color-faint))` }}
+            style={{
+              color: hit
+                ? IMPACT_COLOR[hit]
+                : `color-mix(in oklab, ${meta.accent} 68%, var(--color-faint))`,
+            }}
           >
-            {meta.label}
+            {hit ? IMPACT_LABEL[hit] : meta.label}
           </div>
         </div>
 
-        {costUsd > 0 && (
+        {costUsd > 0 && !simulating && (
           <span className="num shrink-0 pt-0.5 text-[11px] text-faint">${costUsd}</span>
         )}
       </div>
@@ -95,7 +137,7 @@ export function KindNode({ data, selected }: NodeProps) {
         </div>
       )}
 
-      {worst && (
+      {worst && !simulating && (
         <span
           className="num absolute -right-1.5 -top-1.5 grid h-[19px] min-w-[19px] place-items-center rounded-full px-1 text-[10.5px] font-bold"
           style={{
@@ -106,6 +148,20 @@ export function KindNode({ data, selected }: NodeProps) {
           title={findings.map((f) => f.title).join(' · ')}
         >
           {findings.length}
+        </span>
+      )}
+
+      {impact === 'failed' && (
+        <span
+          className="absolute -right-2 -top-2 grid h-[22px] w-[22px] place-items-center rounded-full text-[13px] font-bold"
+          style={{
+            background: 'var(--color-danger)',
+            color: '#1a0509',
+            boxShadow: '0 0 0 3.5px var(--color-ground), 0 0 20px -2px var(--color-danger)',
+          }}
+          title="Simulated failure"
+        >
+          ✕
         </span>
       )}
     </div>

@@ -162,3 +162,6 @@ export const CopyIcon = ui(
 export const SparkIcon = ui(
   <path d="M8 1.8 9.5 6l4.2 1.5L9.5 9 8 13.2 6.5 9 2.3 7.5 6.5 6 8 1.8Z" />,
 );
+export const BoltIcon = ui(
+  <path d="M8.9 1.6 3.3 9.2h3.9l-.9 5.2 5.8-7.6H8.2l.7-5.2Z" />,
+);
